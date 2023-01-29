@@ -122,13 +122,21 @@ func getMangaData(ctx context.Context) error {
 	fmt.Println(manga.InsertToDatabase())
 
 	chapterNodes := doc.Find("div > nav").First()
+	var chapters []*model.Chapter
+	var chapterUrl []string
 	chapterNodes.Find("a[href]").Each(func(index int, info *goquery.Selection) {
 		chapter := new(model.Chapter)
 		chapter.Manga = manga.Id
 		chapter.Name = info.Text()
 		chapter.Cover = manga.Cover
-		chapter.UpdateTime = 1674998483
+		chapters = append(chapters, chapter)
+		url, _ := info.Attr("href")
+		chapterUrl = append(chapterUrl, url)
+	})
 
+	for i := len(chapters) - 1; i >= 0; i-- {
+		chapter := chapters[i]
+		chapter.UpdateTime = uint(time.Now().Unix())
 		chapter.InsertToDatabase()
 		manga.UpdateChapter(chapter)
 		filepath := "./Manga/" + manga.Id.Hex() + "/" + chapter.Id.Hex()
@@ -137,21 +145,20 @@ func getMangaData(ctx context.Context) error {
 			log.Println(err)
 		}
 
-		url, _ := info.Attr("href")
-		chromedp.Navigate(url).Do(ctx)
+		chromedp.Navigate(chapterUrl[i]).Do(ctx)
 		chromedp.Sleep(5 * time.Second).Do(ctx)
 
 		node, err := dom.GetDocument().Do(ctx)
 		if err != nil {
-			return
+			return err
 		}
 		res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
 		if err != nil {
-			return
+			return err
 		}
 		doc, err := goquery.NewDocumentFromReader(strings.NewReader(res))
 		if err != nil {
-			return
+			return err
 		}
 
 		doc.Find("div.page-chapter").Each(func(index int, info *goquery.Selection) {
@@ -165,7 +172,7 @@ func getMangaData(ctx context.Context) error {
 				downloadImage(filepath+"/"+strconv.Itoa(index)+".jpg", imgUrl)
 			}
 		})
-	})
+	}
 
 	return nil
 }
