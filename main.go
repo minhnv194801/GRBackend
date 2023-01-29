@@ -18,6 +18,8 @@ import (
 )
 
 const (
+	numberOfPage  = 10
+	url           = "https://www.nettruyenking.com/tim-truyen?status=2&sort=10&page=1"
 	excludedImage = "https://u.ntcdntempv3.com/content/2022-11-23/638047952612608555.jpg"
 	mangaUrl      = "https://www.nettruyenking.com/truyen-tranh/shuumatsu-no-valkyrie-207270"
 )
@@ -38,10 +40,10 @@ func newChromedp() (context.Context, context.CancelFunc) {
 
 func crawlManga(ctx context.Context) {
 	task := chromedp.Tasks{
-		chromedp.Navigate(mangaUrl),
+		chromedp.Navigate(url),
 		chromedp.Sleep(5 * time.Second),
 
-		chromedp.ActionFunc(getMangaData),
+		chromedp.ActionFunc(getAllMangaData),
 	}
 
 	if err := chromedp.Run(ctx, task); err != nil {
@@ -49,7 +51,33 @@ func crawlManga(ctx context.Context) {
 	}
 }
 
-func getMangaData(ctx context.Context) error {
+func getAllMangaData(ctx context.Context) error {
+	node, err := dom.GetDocument().Do(ctx)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(res))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	doc.Find("div.item div.image a").Each(func(index int, info *goquery.Selection) {
+		mangaUrl, _ := info.Attr("href")
+		getMangaData(ctx, mangaUrl)
+	})
+	return nil
+}
+
+func getMangaData(ctx context.Context, mangaUrl string) error {
+	chromedp.Navigate(mangaUrl).Do(ctx)
+	chromedp.Sleep(10 * time.Second).Do(ctx)
 	node, err := dom.GetDocument().Do(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -121,7 +149,7 @@ func getMangaData(ctx context.Context) error {
 	manga.Description = description
 	fmt.Println(manga.InsertToDatabase())
 
-	chapterNodes := doc.Find("div > nav").First()
+	chapterNodes := doc.Find("div > nav > ul").First()
 	var chapters []*model.Chapter
 	var chapterUrl []string
 	chapterNodes.Find("a[href]").Each(func(index int, info *goquery.Selection) {
