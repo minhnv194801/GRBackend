@@ -17,6 +17,7 @@ type Manga struct {
 	Cover         string               `bson:"cover"`
 	Description   string               `bson:"description"`
 	Status        Status               `bson:"status"`
+	UpdateTime    uint                 `bson:"updateTime"`
 	IsRecommended bool                 `bson:"isRecommended"`
 	Tags          []string             `bson:"tags"`
 	FollowedUsers []primitive.ObjectID `bson:"followedUsers"`
@@ -32,11 +33,10 @@ const (
 )
 
 func (manga *Manga) InsertToDatabase() (primitive.ObjectID, error) {
-	db, err := database.GetMongoDB()
+	coll, err := database.GetMangaCollection()
 	if err != nil {
 		return [12]byte{}, err
 	}
-	coll := db.Collection("Manga")
 
 	id, err := getExistedTitleID(manga.Name)
 	if id != primitive.NilObjectID {
@@ -54,11 +54,10 @@ func (manga *Manga) InsertToDatabase() (primitive.ObjectID, error) {
 }
 
 func (manga *Manga) UpdateChapter(chapter *Chapter) error {
-	db, err := database.GetMongoDB()
+	coll, err := database.GetMangaCollection()
 	if err != nil {
 		return err
 	}
-	coll := db.Collection("Manga")
 
 	manga.Chapters = append(manga.Chapters, chapter.Id)
 	filter := bson.D{{"_id", manga.Id}}
@@ -70,34 +69,48 @@ func (manga *Manga) UpdateChapter(chapter *Chapter) error {
 	return nil
 }
 
-func (manga *Manga) GetMangaFromName(name string) error {
-	db, err := database.GetMongoDB()
+func (manga *Manga) GetItemFromObjectId(objID primitive.ObjectID) error {
+	coll, err := database.GetMangaCollection()
 	if err != nil {
 		return err
 	}
-	coll := db.Collection("Manga")
+	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	opts := options.FindOne()
+	found := coll.FindOne(context.TODO(), filter, opts)
+	if found.Err() != nil {
+		return found.Err()
+	}
+	err = found.Decode(&manga)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	var doc Manga
+func (manga *Manga) GetItemFromName(name string) error {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+
 	filter := bson.D{primitive.E{Key: "name", Value: name}}
 	opts := options.FindOne()
 	found := coll.FindOne(context.TODO(), filter, opts)
 	if found.Err() != nil {
 		return found.Err()
 	}
-	err = found.Decode(&doc)
+	err = found.Decode(&manga)
 	if err != nil {
 		return err
 	}
-	manga = &doc
 	return nil
 }
 
 func getExistedTitleID(name string) (primitive.ObjectID, error) {
-	db, err := database.GetMongoDB()
+	coll, err := database.GetMangaCollection()
 	if err != nil {
 		return [12]byte{}, err
 	}
-	coll := db.Collection("Manga")
 
 	var doc Manga
 	filter := bson.D{primitive.E{Key: "name", Value: name}}

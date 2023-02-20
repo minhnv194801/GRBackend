@@ -1,242 +1,62 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"log"
-	"magna/model"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/PuerkitoBio/goquery"
-	"github.com/chromedp/cdproto/dom"
-	"github.com/chromedp/chromedp"
+	"magna/routers"
 )
-
-const (
-	numberOfPage  = 10
-	url           = "https://www.nettruyenking.com/tim-truyen?status=2&sort=10&page="
-	excludedImage = "https://u.ntcdntempv3.com/content/2022-11-23/638047952612608555.jpg"
-	mangaUrl      = "https://www.nettruyenking.com/truyen-tranh/shuumatsu-no-valkyrie-207270"
-)
-
-func newChromedp() (context.Context, context.CancelFunc) {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", false),
-		chromedp.Flag("start-fullscreen", false),
-	)
-
-	allocCtx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
-	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(log.Printf))
-
-	crawlManga(ctx)
-
-	return ctx, cancel
-}
-
-func crawlManga(ctx context.Context) {
-	task := chromedp.Tasks{
-		chromedp.ActionFunc(getAllMangaData),
-	}
-
-	if err := chromedp.Run(ctx, task); err != nil {
-		fmt.Println(err)
-	}
-}
-
-func getAllMangaData(ctx context.Context) error {
-	for i := 1; i <= numberOfPage; i++ {
-		chromedp.Navigate(url + strconv.Itoa(i)).Do(ctx)
-		chromedp.Sleep(5 * time.Second).Do(ctx)
-		node, err := dom.GetDocument().Do(ctx)
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-		res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-		doc, err := goquery.NewDocumentFromReader(strings.NewReader(res))
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-
-		doc.Find("div.item div.image a").Each(func(index int, info *goquery.Selection) {
-			mangaUrl, _ := info.Attr("href")
-			getMangaData(ctx, mangaUrl)
-		})
-	}
-
-	return nil
-}
-
-func getMangaData(ctx context.Context, mangaUrl string) error {
-	chromedp.Navigate(mangaUrl).Do(ctx)
-	chromedp.Sleep(10 * time.Second).Do(ctx)
-	node, err := dom.GetDocument().Do(ctx)
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
-	res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(res))
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
-
-	titleNode := doc.Find("#item-detail > h1").First()
-	title := titleNode.Text()
-	fmt.Println("Name:", title)
-
-	coverNode := doc.Find("#item-detail > div.detail-info > div > div.col-xs-4.col-image > img").First()
-	cover, _ := coverNode.Attr("src")
-	cover = "https:" + cover
-	fmt.Println("Cover:", cover)
-
-	alternateNameNode := doc.Find("#item-detail > div.detail-info > div > div.col-xs-8.col-info > ul > li.othername.row > h2").First()
-	alternateNames := strings.Split(alternateNameNode.Text(), ";")
-	for i := range alternateNames {
-		alternateNames[i] = strings.TrimSpace(alternateNames[i])
-	}
-	fmt.Println("AlternateName:", alternateNames)
-
-	authorNode := doc.Find("#item-detail > div.detail-info > div > div.col-xs-8.col-info > ul > li.author.row > p.col-xs-8 > a").First()
-	author := authorNode.Text()
-	if strings.Compare(author, "Đang cập nhật") == 0 {
-		author = ""
-	}
-	fmt.Println("Author:", author)
-
-	statusNode := doc.Find("#item-detail > div.detail-info > div > div.col-xs-8.col-info > ul > li.status.row > p.col-xs-8").First()
-	var status model.Status
-	if statusNode.Text() == "Đang tiến hành" {
-		status = model.Ongoing
-	} else {
-		status = model.Finished
-	}
-	fmt.Println("Status:", status)
-
-	tagsNode := doc.Find("#item-detail > div.detail-info > div > div.col-xs-8.col-info > ul > li.kind.row > p.col-xs-8").First()
-	var tags []string
-	tagsNode.Find("a[href]").Each(func(index int, info *goquery.Selection) {
-		tags = append(tags, info.Text())
-	})
-	fmt.Println("Tags:", tags)
-
-	descriptionNode := doc.Find("#item-detail > div.detail-content > p").First()
-	description := descriptionNode.Text()
-	fmt.Println("Description:", description)
-
-	manga := new(model.Manga)
-	manga.Name = title
-	manga.Cover = cover
-	manga.AlternateName = alternateNames
-	if author != "" {
-		manga.Author = append(manga.Author, author)
-	}
-	manga.Status = status
-	manga.Tags = tags
-	manga.Description = description
-	fmt.Println(manga.InsertToDatabase())
-
-	chapterNodes := doc.Find("div > nav > ul").First()
-	var chapters []*model.Chapter
-	var chapterUrl []string
-	chapterNodes.Find("a[href]").Each(func(index int, info *goquery.Selection) {
-		chapter := new(model.Chapter)
-		chapter.Manga = manga.Id
-		chapter.Name = info.Text()
-		chapter.Cover = manga.Cover
-		chapters = append(chapters, chapter)
-		url, _ := info.Attr("href")
-		chapterUrl = append(chapterUrl, url)
-	})
-
-	for i := len(chapters) - 1; i >= 0; i-- {
-		chapter := chapters[i]
-		chapter.UpdateTime = uint(time.Now().Unix())
-		chapter.InsertToDatabase()
-		manga.UpdateChapter(chapter)
-		filepath := "./Manga/" + manga.Id.Hex() + "/" + chapter.Id.Hex()
-		err := os.MkdirAll(filepath, os.ModePerm)
-		if err != nil {
-			log.Println(err)
-		}
-
-		chromedp.Navigate(chapterUrl[i]).Do(ctx)
-		chromedp.Sleep(5 * time.Second).Do(ctx)
-
-		node, err := dom.GetDocument().Do(ctx)
-		if err != nil {
-			return err
-		}
-		res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
-		if err != nil {
-			return err
-		}
-		doc, err := goquery.NewDocumentFromReader(strings.NewReader(res))
-		if err != nil {
-			return err
-		}
-
-		doc.Find("div.page-chapter").Each(func(index int, info *goquery.Selection) {
-			img := info.Find("img").First()
-			imgUrl, exists := img.Attr("src")
-			if !exists {
-				log.Fatal("error")
-			}
-			imgUrl = "https:" + imgUrl
-			if strings.Compare(imgUrl, excludedImage) != 0 {
-				downloadImage(filepath+"/"+strconv.Itoa(index)+".jpg", imgUrl)
-			}
-		})
-	}
-
-	return nil
-}
-
-func downloadImage(filepath, url string) error {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("referer", "https://www.nettruyenking.com/")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	//open a file for writing
-	file, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Use io.Copy to just dump the response body to the file. This supports huge files
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func main() {
-	_, cancel := newChromedp()
-	defer cancel()
+	// router := gin.Default()
+
+	// corsConfig := cors.DefaultConfig()
+	// corsConfig.AllowOrigins = []string{"http://localhost:3000"}
+	// corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
+	// // corsConfig.AllowHeaders = []string{"Content-Type", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"}
+	// // To be able to send tokens to the server.
+	// corsConfig.AllowCredentials = true
+	// // OPTIONS method for ReactJS
+	// corsConfig.AddAllowMethods("OPTIONS")
+	// // Register the middleware
+	// router.Use(cors.New(corsConfig))
+
+	// router.Group("/api/v1")
+	// router.GET("/chapterlist/:mangaid", routes.GetChapterInfo)
+	// router.GET("/chapter/:chapterid", routes.GetChapterList)
+
+	router := routers.InitRouter()
+	router.Run("localhost:8080")
+	// db, _ := database.GetMongoDB()
+	// coll := db.Collection("Manga")
+
+	// cursor, err := coll.Find(context.TODO(), bson.D{{}})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer cursor.Close(context.Background())
+	// for cursor.Next(context.Background()) {
+	// 	// To decode into a struct, use cursor.Decode()
+	// 	var result model.Manga
+	// 	err := cursor.Decode(&result)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+
+	// 	var doc model.Chapter
+	// 	fmt.Println(result.Chapters[len(result.Chapters)-1])
+	// 	filter := bson.D{{"_id", result.Chapters[len(result.Chapters)-1]}}
+	// 	opts := options.FindOne()
+	// 	chapterColl := db.Collection("Chapter")
+	// 	found := chapterColl.FindOne(context.TODO(), filter, opts)
+	// 	if found.Err() != nil {
+	// 		log.Println("Hello")
+	// 		log.Fatal(found.Err())
+	// 	}
+	// 	err = found.Decode(&doc)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+
+	// 	result.UpdateTime = doc.UpdateTime
+	// 	result.UpdateUpdateTime()
+	// 	fmt.Println(result.Id)
+	// }
 }

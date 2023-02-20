@@ -10,9 +10,9 @@ import (
 )
 
 type Chapter struct {
-	Id         primitive.ObjectID   `bson:"_id,omitempty"`
+	Id         primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
 	Manga      primitive.ObjectID   `bson:"manga"`
-	Name       string               `bson:"name"`
+	Name       string               `bson:"name" json:"title"`
 	Cover      string               `bson:"cover"`
 	Price      uint                 `bson:"price"`
 	UpdateTime uint                 `bson:"updateTime"`
@@ -22,11 +22,10 @@ type Chapter struct {
 }
 
 func (chapter *Chapter) InsertToDatabase() (primitive.ObjectID, error) {
-	db, err := database.GetMongoDB()
+	coll, err := database.GetChapterCollection()
 	if err != nil {
 		return [12]byte{}, err
 	}
-	coll := db.Collection("Chapter")
 
 	id, err := getExistedChapterID(chapter.Manga, chapter.Name)
 	if id != primitive.NilObjectID {
@@ -43,12 +42,53 @@ func (chapter *Chapter) InsertToDatabase() (primitive.ObjectID, error) {
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
+func (chapter *Chapter) GetFromObjectId(objID primitive.ObjectID) error {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	opts := options.FindOne()
+	found := coll.FindOne(context.TODO(), filter, opts)
+	if found.Err() != nil {
+		return found.Err()
+	}
+	err = found.Decode(chapter)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (chapter *Chapter) GetItemListFromObjectId(objID []primitive.ObjectID) ([]Chapter, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Chapter, 0)
+	multiFilter := bson.M{"_id": bson.M{"$in": objID}}
+	multiFindOpts := options.Find().SetSort(bson.D{{"updateTime", 1}})
+	cursor, err := coll.Find(context.TODO(), multiFilter, multiFindOpts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
+}
+
 func getExistedChapterID(mangaId primitive.ObjectID, name string) (primitive.ObjectID, error) {
-	db, err := database.GetMongoDB()
+	coll, err := database.GetChapterCollection()
 	if err != nil {
 		return [12]byte{}, err
 	}
-	coll := db.Collection("Chapter")
 
 	var doc Chapter
 	filter := bson.D{{"manga", mangaId}, {"name", name}}
