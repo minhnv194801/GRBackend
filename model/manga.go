@@ -208,6 +208,32 @@ func (manga *Manga) GetListRecommendManga(count int) ([]Manga, error) {
 	}
 }
 
+func (manga *Manga) GetNewestItemList(count int) ([]Manga, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Manga, 0)
+	filter := bson.D{{}}
+	opts := options.Find().SetSort(bson.D{{"updateTime", -1}})
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], nil
+	} else {
+		return listItem[:], nil
+	}
+}
+
 func getExistedTitleID(name string) (primitive.ObjectID, error) {
 	coll, err := database.GetMangaCollection()
 	if err != nil {

@@ -38,3 +38,15 @@ func TestGetRecommendItems(t *testing.T) {
 		t.Log(recomm.Name)
 	}
 }
+
+func TestGetNewestItemList(t *testing.T) {
+	recommended, err := new(model.Manga).GetNewestItemList(9)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	for _, recomm := range recommended {
+		t.Log(recomm.Name)
+	}
+}
