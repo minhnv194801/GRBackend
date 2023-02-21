@@ -69,9 +69,32 @@ func (chapter *Chapter) GetItemListFromObjectId(objID []primitive.ObjectID) ([]C
 	}
 
 	listItem := make([]Chapter, 0)
-	multiFilter := bson.M{"_id": bson.M{"$in": objID}}
-	multiFindOpts := options.Find().SetSort(bson.D{{"updateTime", 1}})
-	cursor, err := coll.Find(context.TODO(), multiFilter, multiFindOpts)
+	aggregatePipeline := bson.A{}
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$match",
+				bson.M{"_id": bson.M{"$in": objID}},
+			},
+		})
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$addFields",
+				bson.D{
+					{"order",
+						bson.D{
+							{"$indexOfArray",
+								bson.A{
+									objID,
+									"$_id",
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+	aggregatePipeline = append(aggregatePipeline, bson.D{{"$sort", bson.D{{"order", 1}}}})
+	cursor, err := coll.Aggregate(context.TODO(), aggregatePipeline)
 	if err != nil {
 		return nil, err
 	}

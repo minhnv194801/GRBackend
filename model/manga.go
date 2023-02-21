@@ -106,6 +106,83 @@ func (manga *Manga) GetItemFromName(name string) error {
 	return nil
 }
 
+func (manga *Manga) GetItemListFromObjectId(objID []primitive.ObjectID) ([]Manga, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Manga, 0)
+	aggregatePipeline := bson.A{}
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$match",
+				bson.M{"_id": bson.M{"$in": objID}},
+			},
+		})
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$addFields",
+				bson.D{
+					{"order",
+						bson.D{
+							{"$indexOfArray",
+								bson.A{
+									objID,
+									"$_id",
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+	aggregatePipeline = append(aggregatePipeline, bson.D{{"$sort", bson.D{{"order", 1}}}})
+	cursor, err := coll.Aggregate(context.TODO(), aggregatePipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
+}
+
+func (manga *Manga) GetRandomExcludedItemListFromObjectId(objID []primitive.ObjectID, count int) ([]Manga, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Manga, 0)
+	aggregatePipeline := bson.A{}
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$match",
+				bson.M{
+					"_id": bson.M{
+						"$nin": objID,
+					},
+				},
+			},
+		})
+	aggregatePipeline = append(aggregatePipeline, bson.D{{"$sample", bson.D{{"size", 5}}}})
+	cursor, err := coll.Aggregate(context.TODO(), aggregatePipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
+}
+
 func (manga *Manga) GetListRecommendManga(count int) ([]Manga, error) {
 	coll, err := database.GetMangaCollection()
 	if err != nil {
