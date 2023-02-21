@@ -1,5 +1,5 @@
 package requests
 
 type RecommendListRequest struct {
-	Count int
+	Count int `json:"count"`
 }

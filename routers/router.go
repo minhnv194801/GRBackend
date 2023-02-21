@@ -1,6 +1,7 @@
 package routers
 
 import (
+	"magna/controllers/homecontroller"
 	"magna/controllers/readcontroller"
 	"magna/middleware"
 
@@ -23,6 +24,11 @@ func InitRouter() *gin.Engine {
 	{
 		apiv1Read.GET("/:chapterid", readcontroller.GetChapterInfo)
 		apiv1Read.GET("/:chapterid/chapterlist", readcontroller.GetChapterList)
+	}
+
+	apiv1Home := apiv1.Group("/home")
+	{
+		apiv1Home.POST("/recommend", homecontroller.GetListRecommendation)
 	}
 
 	return router

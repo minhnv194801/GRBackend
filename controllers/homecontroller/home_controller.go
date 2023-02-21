@@ -3,21 +3,34 @@ package homecontroller
 import (
 	"magna/model"
 	"magna/requests"
+	"magna/responses"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func GetChapterInfo(c *gin.Context) {
+func GetListRecommendation(c *gin.Context) {
 	var request requests.RecommendListRequest
-	c.BindJSON(&request)
-
-	recommendList, err := (*model.Manga).GetListRecommendManga(request.Count)
+	err := c.BindJSON(&request)
 	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
+		return
 	}
 
-	// var response responses.ReadResponse
+	recommendList, err := new(model.Manga).GetListRecommendManga(request.Count)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
+		return
+	}
 
-	c.IndentedJSON(http.StatusOK, recommendList)
+	var responseList []responses.RecommendResponse
+	for _, recommend := range recommendList {
+		var response responses.RecommendResponse
+		response.Id = recommend.Id.Hex()
+		response.Title = recommend.Name
+		response.Image = recommend.Cover
+		responseList = append(responseList, response)
+	}
+
+	c.IndentedJSON(http.StatusOK, responseList)
 }
