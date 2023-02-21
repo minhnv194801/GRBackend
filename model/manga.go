@@ -60,8 +60,11 @@ func (manga *Manga) UpdateChapter(chapter *Chapter) error {
 	}
 
 	manga.Chapters = append(manga.Chapters, chapter.Id)
+	if manga.UpdateTime < chapter.UpdateTime {
+		manga.UpdateTime = chapter.UpdateTime
+	}
 	filter := bson.D{{"_id", manga.Id}}
-	update := bson.D{{"$set", bson.D{{"chapters", manga.Chapters}}}}
+	update := bson.D{{"$set", bson.D{{"chapters", manga.Chapters}, {"updateTime", manga.UpdateTime}}}}
 	_, err = coll.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return err
