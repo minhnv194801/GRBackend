@@ -42,7 +42,7 @@ func (chapter *Chapter) InsertToDatabase() (primitive.ObjectID, error) {
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
-func (chapter *Chapter) GetFromObjectId(objID primitive.ObjectID) error {
+func (chapter *Chapter) GetItemFromObjectId(objID primitive.ObjectID) error {
 	coll, err := database.GetChapterCollection()
 	if err != nil {
 		return err
@@ -70,6 +70,28 @@ func (chapter *Chapter) GetItemListFromObjectId(objID []primitive.ObjectID) ([]C
 
 	listItem := make([]Chapter, 0)
 	multiFilter := bson.M{"_id": bson.M{"$in": objID}}
+	multiFindOpts := options.Find().SetSort(bson.D{{"updateTime", 1}})
+	cursor, err := coll.Find(context.TODO(), multiFilter, multiFindOpts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
+}
+
+func (chapter *Chapter) GetMangaChapterList(objID primitive.ObjectID) ([]Chapter, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Chapter, 0)
+	multiFilter := bson.M{"manga": objID}
 	multiFindOpts := options.Find().SetSort(bson.D{{"updateTime", 1}})
 	cursor, err := coll.Find(context.TODO(), multiFilter, multiFindOpts)
 	if err != nil {

@@ -106,6 +106,31 @@ func (manga *Manga) GetItemFromName(name string) error {
 	return nil
 }
 
+func (manga *Manga) GetListRecommendManga(count int) ([]Manga, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Manga, 0)
+	filter := bson.M{"isRecommended": true}
+	cursor, err := coll.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], nil
+	} else {
+		return listItem[:], nil
+	}
+}
+
 func getExistedTitleID(name string) (primitive.ObjectID, error) {
 	coll, err := database.GetMangaCollection()
 	if err != nil {

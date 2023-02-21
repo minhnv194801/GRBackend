@@ -1,7 +1,7 @@
 package routers
 
 import (
-	"magna/controllers/readcontrollers"
+	"magna/controllers/readcontroller"
 	"magna/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +21,8 @@ func InitRouter() *gin.Engine {
 	apiv1 := router.Group("/api/v1")
 	apiv1Read := apiv1.Group("/read")
 	{
-		apiv1Read.GET("/:chapterid", readcontrollers.GetChapterInfo)
+		apiv1Read.GET("/:chapterid", readcontroller.GetChapterInfo)
+		apiv1Read.GET("/:chapterid/chapterlist", readcontroller.GetChapterList)
 	}
 
 	return router
