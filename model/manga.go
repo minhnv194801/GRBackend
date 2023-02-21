@@ -211,7 +211,7 @@ func (manga *Manga) GetListRecommendManga(count int) ([]Manga, error) {
 	}
 }
 
-func (manga *Manga) GetNewestItemList(count int) ([]Manga, error) {
+func (manga *Manga) GetNewestItemList(position, count int) ([]Manga, error) {
 	coll, err := database.GetMangaCollection()
 	if err != nil {
 		return nil, err
@@ -219,7 +219,11 @@ func (manga *Manga) GetNewestItemList(count int) ([]Manga, error) {
 
 	listItem := make([]Manga, 0)
 	filter := bson.D{{}}
-	opts := options.Find().SetSort(bson.D{{"updateTime", -1}})
+	opts := options.Find()
+	opts.SetSort(bson.M{"updateTime": -1})
+	opts.SetSkip(int64(position))
+	opts.SetLimit(int64(count))
+
 	cursor, err := coll.Find(context.TODO(), filter, opts)
 	if err != nil {
 		return nil, err

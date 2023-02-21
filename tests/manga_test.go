@@ -40,7 +40,7 @@ func TestGetRecommendItems(t *testing.T) {
 }
 
 func TestGetNewestItemList(t *testing.T) {
-	recommended, err := new(model.Manga).GetNewestItemList(9)
+	recommended, err := new(model.Manga).GetNewestItemList(8, 9)
 	if err != nil {
 		t.Error(err.Error())
 		return

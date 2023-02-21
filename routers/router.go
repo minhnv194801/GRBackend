@@ -28,6 +28,7 @@ func InitRouter() *gin.Engine {
 
 	apiv1Home := apiv1.Group("/home")
 	{
+		apiv1Home.POST("/new", homecontroller.GetNewestList)
 		apiv1Home.POST("/recommend", homecontroller.GetListRecommendation)
 	}
 
