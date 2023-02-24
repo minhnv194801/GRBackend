@@ -1,13 +1,22 @@
 package database
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"sync"
+
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+var commentCollection *mongo.Collection
+var commentRunOnce sync.Once
 
 func GetCommentCollection() (*mongo.Collection, error) {
-	db, err := GetMongoDB()
-	if err != nil {
-		return nil, err
-	}
-	collection := db.Collection("Comments")
+	commentRunOnce.Do(func() {
+		db, err := GetMongoDB()
+		if err != nil {
+			return
+		}
+		commentCollection = db.Collection("Comments")
+	})
 
-	return collection, nil
+	return commentCollection, nil
 }

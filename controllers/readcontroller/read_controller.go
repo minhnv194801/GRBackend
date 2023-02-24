@@ -3,12 +3,12 @@ package readcontroller
 import (
 	"fmt"
 	"log"
-	"magna/model"
 	"magna/responses"
+	"magna/services/chapterservice"
+	"magna/services/mangaservice"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetChapterInfo(c *gin.Context) {
@@ -19,17 +19,10 @@ func GetChapterInfo(c *gin.Context) {
 	// fmt.Println(c.Request.Header["Authorization"])
 
 	var response responses.ReadResponse
-	var chapter model.Chapter
 
-	objId, err := primitive.ObjectIDFromHex(id)
+	chapter, err := chapterservice.GetChapterInfo(id)
 	if err != nil {
 		log.Println(err.Error(), "err.Error() GetChapterInfo controllers/readcontrollers/readcontrollers.go:26")
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
-		return
-	}
-	err = chapter.GetItemFromObjectId(objId)
-	if err != nil {
-		log.Println(err.Error(), "err.Error() GetChapterInfo controllers/readcontrollers/readcontrollers.go:32")
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}
@@ -37,8 +30,7 @@ func GetChapterInfo(c *gin.Context) {
 	response.MangaId = chapter.Manga.Hex()
 	response.Pages = chapter.Images
 
-	var manga model.Manga
-	err = manga.GetItemFromObjectId(chapter.Manga)
+	manga, err := mangaservice.GetItemFromId(chapter.Manga.Hex())
 	if err != nil {
 		log.Println(err.Error(), "err.Error() GetChapterInfo controllers/readcontrollers/readcontrollers.go:43")
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -56,25 +48,9 @@ func GetChapterList(c *gin.Context) {
 	fmt.Println(c.GetHeader("Authorization"))
 	// fmt.Println(c.Request.Header["Authorization"])
 
-	var response []model.Chapter
-
-	var chapter model.Chapter
-	objId, err := primitive.ObjectIDFromHex(id)
+	response, err := chapterservice.GetSameMangaChapterList(id)
 	if err != nil {
-		log.Println(err.Error(), "err.Error() GetChapterInfo controllers/readcontrollers/readcontrollers.go:26")
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
-		return
-	}
-	err = chapter.GetItemFromObjectId(objId)
-	if err != nil {
-		log.Println(err.Error(), "err.Error() GetChapterInfo controllers/readcontrollers/readcontrollers.go:43")
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
-		return
-	}
-
-	response, err = chapter.GetMangaChapterList(chapter.Manga)
-	if err != nil {
-		log.Println(err.Error(), "err.Error() GetChapterInfo controllers/readcontrollers/readcontrollers.go:51")
+		log.Println(err.Error(), "err.Error() GetChapterInfo controllers/readcontrollers/readcontrollers.go:32")
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}

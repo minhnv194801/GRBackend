@@ -24,8 +24,6 @@ const (
 	excludedImage = "https://u.ntcdntempv3.com/content/2022-11-23/638047952612608555.jpg"
 )
 
-var wg sync.WaitGroup
-
 func newChromedp() (context.Context, context.CancelFunc) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", false),
@@ -35,6 +33,7 @@ func newChromedp() (context.Context, context.CancelFunc) {
 	allocCtx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(log.Printf))
 
+	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

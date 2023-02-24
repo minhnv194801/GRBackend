@@ -1,13 +1,21 @@
 package database
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"sync"
+
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+var reportCollection *mongo.Collection
+var reportRunOnce sync.Once
 
 func GetReportCollection() (*mongo.Collection, error) {
-	db, err := GetMongoDB()
-	if err != nil {
-		return nil, err
-	}
-	collection := db.Collection("Reports")
-
-	return collection, nil
+	reportRunOnce.Do(func() {
+		db, err := GetMongoDB()
+		if err != nil {
+			return
+		}
+		reportCollection = db.Collection("Reports")
+	})
+	return reportCollection, nil
 }

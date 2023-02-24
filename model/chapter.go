@@ -129,6 +129,31 @@ func (chapter *Chapter) GetMangaChapterList(objID primitive.ObjectID) ([]Chapter
 	return listItem, nil
 }
 
+func (chapter *Chapter) GetMangaNewestChapterList(objID primitive.ObjectID, count int) ([]Chapter, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Chapter, 0)
+	multiFilter := bson.M{"manga": objID}
+	multiFindOpts := options.Find().SetSort(bson.D{{"updateTime", -1}})
+	if count != 0 {
+		multiFindOpts.SetLimit(int64(count))
+	}
+	cursor, err := coll.Find(context.TODO(), multiFilter, multiFindOpts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
+}
+
 func getExistedChapterID(mangaId primitive.ObjectID, name string) (primitive.ObjectID, error) {
 	coll, err := database.GetChapterCollection()
 	if err != nil {

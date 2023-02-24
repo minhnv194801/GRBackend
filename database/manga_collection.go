@@ -1,13 +1,20 @@
 package database
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"sync"
+
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+var mangaCollection *mongo.Collection
+var mangaRunOnce sync.Once
 
 func GetMangaCollection() (*mongo.Collection, error) {
 	db, err := GetMongoDB()
 	if err != nil {
 		return nil, err
 	}
-	collection := db.Collection("Manga")
+	mangaCollection = db.Collection("Manga")
 
-	return collection, nil
+	return mangaCollection, nil
 }

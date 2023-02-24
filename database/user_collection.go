@@ -1,13 +1,22 @@
 package database
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"sync"
+
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+var userCollection *mongo.Collection
+var userRunOnce sync.Once
 
 func GetUserCollection() (*mongo.Collection, error) {
-	db, err := GetMongoDB()
-	if err != nil {
-		return nil, err
-	}
-	collection := db.Collection("User")
+	userRunOnce.Do(func() {
+		db, err := GetMongoDB()
+		if err != nil {
+			return
+		}
+		userCollection = db.Collection("User")
+	})
 
-	return collection, nil
+	return userCollection, nil
 }

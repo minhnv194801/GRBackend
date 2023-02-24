@@ -172,7 +172,7 @@ func (manga *Manga) GetRandomExcludedItemListFromObjectId(objID []primitive.Obje
 				},
 			},
 		})
-	aggregatePipeline = append(aggregatePipeline, bson.D{{"$sample", bson.D{{"size", 5}}}})
+	aggregatePipeline = append(aggregatePipeline, bson.D{{"$sample", bson.D{{"size", count}}}})
 	cursor, err := coll.Aggregate(context.TODO(), aggregatePipeline)
 	if err != nil {
 		return nil, err
@@ -239,6 +239,21 @@ func (manga *Manga) GetNewestItemList(position, count int) ([]Manga, error) {
 	} else {
 		return listItem[:], nil
 	}
+}
+
+func (manga *Manga) GetTotalCount() (int, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return 0, err
+	}
+
+	filter := bson.D{{}}
+	count, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
 }
 
 func getExistedTitleID(name string) (primitive.ObjectID, error) {

@@ -50,3 +50,13 @@ func TestGetNewestItemList(t *testing.T) {
 		t.Log(recomm.Name)
 	}
 }
+
+func TestGetTotalCount(t *testing.T) {
+	count, err := new(model.Manga).GetTotalCount()
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	t.Log("Count:", count)
+}

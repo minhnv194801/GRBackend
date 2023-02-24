@@ -1,13 +1,22 @@
 package database
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"sync"
+
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+var chapterCollection *mongo.Collection
+var chapterRunOnce sync.Once
 
 func GetChapterCollection() (*mongo.Collection, error) {
-	db, err := GetMongoDB()
-	if err != nil {
-		return nil, err
-	}
-	collection := db.Collection("Chapter")
+	chapterRunOnce.Do(func() {
+		db, err := GetMongoDB()
+		if err != nil {
+			return
+		}
+		chapterCollection = db.Collection("Chapter")
+	})
 
-	return collection, nil
+	return chapterCollection, nil
 }
