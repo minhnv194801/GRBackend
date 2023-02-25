@@ -6,8 +6,10 @@ import (
 	"magna/model"
 	"magna/requests"
 	"magna/responses"
+	"magna/services/chapterservice"
 	"magna/services/commentservice"
 	"magna/services/mangaservice"
+	"magna/services/sessionservice"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +19,9 @@ func GetMangaInfo(c *gin.Context) {
 	id := c.Param("mangaid")
 	log.Println("MangaId:", id)
 	//TODO: get user id from token?
-	fmt.Println(c.GetHeader("Authorization"))
+	sessionkey := c.GetHeader("Authorization")
+	userId, _ := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
+
 	// fmt.Println(c.Request.Header["Authorization"])
 
 	var response responses.MangaInfoResponse
@@ -31,8 +35,6 @@ func GetMangaInfo(c *gin.Context) {
 
 	response.Title = manga.Name
 	response.Cover = manga.Cover
-	// TODO: check if user already favorite manga
-	response.IsFavorite = false
 	if len(manga.Author) != 0 {
 		response.Author = manga.Author[0]
 	} else {
@@ -40,6 +42,9 @@ func GetMangaInfo(c *gin.Context) {
 	}
 	response.Status = uint(manga.Status)
 	response.Tags = manga.Tags
+	// TODO: check if user already favorite manga
+	isFavorite, _ := mangaservice.CheckIsFavorite(id, userId)
+	response.IsFavorite = isFavorite
 	// TODO: rating services
 	response.UserRating = 0
 	response.AvgRating = 0
@@ -53,6 +58,8 @@ func GetMangaInfo(c *gin.Context) {
 
 func GetMangaChapterList(c *gin.Context) {
 	id := c.Param("mangaid")
+	sessionkey := c.GetHeader("Authorization")
+	userId, _ := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	var request requests.MangaChapterListRequest
 	err := c.BindJSON(&request)
 	if err != nil {
@@ -76,7 +83,8 @@ func GetMangaChapterList(c *gin.Context) {
 		response.Cover = chapter.Cover
 		response.Price = chapter.Price
 		// TODO: Check user ownership
-		response.IsOwned = false
+		isOwned, _ := chapterservice.CheckIsOwner(chapter.Id.Hex(), userId)
+		response.IsOwned = isOwned
 		response.UpdateTime = chapter.UpdateTime
 		responseList = append(responseList, response)
 	}
@@ -92,7 +100,7 @@ func GetCommentList(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
 		return
 	}
-	var responseList []responses.CommentListResponse
+	var responseList responses.CommentListResponse
 	commentList, err := commentservice.GetCommentListFromMangaId(id, request.Postition, request.Count)
 	if err != nil {
 		log.Println(err.Error(), "err.Error() GetCommentList controllers/mangacontrollers/mangacontrollers.go:93")
@@ -100,7 +108,7 @@ func GetCommentList(c *gin.Context) {
 		return
 	}
 	for _, comment := range commentList {
-		var response responses.CommentListResponse
+		var response responses.CommentInfo
 		response.Content = comment.Content
 		response.UpdateTime = comment.TimeCreated
 		user := new(model.User)
@@ -112,8 +120,15 @@ func GetCommentList(c *gin.Context) {
 		}
 		response.Avatar = user.Avatar
 		response.Username = user.DisplayName
-		responseList = append(responseList, response)
+		responseList.Data = append(responseList.Data, response)
 	}
+	totalCount, err := commentservice.GetMangaCommentCount(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
+	}
+	responseList.TotalCount = totalCount
 
 	c.IndentedJSON(http.StatusOK, responseList)
 }

@@ -1,7 +1,6 @@
 package readcontroller
 
 import (
-	"fmt"
 	"log"
 	"magna/responses"
 	"magna/services/chapterservice"
@@ -13,10 +12,6 @@ import (
 
 func GetChapterInfo(c *gin.Context) {
 	id := c.Param("chapterid")
-	log.Println("ChapterId:", id)
-	//TODO: check authorization
-	fmt.Println(c.GetHeader("Authorization"))
-	// fmt.Println(c.Request.Header["Authorization"])
 
 	var response responses.ReadResponse
 
@@ -43,10 +38,6 @@ func GetChapterInfo(c *gin.Context) {
 
 func GetChapterList(c *gin.Context) {
 	id := c.Param("chapterid")
-	log.Println("ChapterId:", id)
-	//TODO: check authorization
-	fmt.Println(c.GetHeader("Authorization"))
-	// fmt.Println(c.Request.Header["Authorization"])
 
 	response, err := chapterservice.GetSameMangaChapterList(id)
 	if err != nil {

@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"fmt"
 	"magna/database"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -39,6 +40,28 @@ func (user *User) InsertToDatabase() (primitive.ObjectID, error) {
 
 	user.Id = result.InsertedID.(primitive.ObjectID)
 	return result.InsertedID.(primitive.ObjectID), nil
+}
+
+func (user *User) UpdateInfo() error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", user.Id}}
+	fmt.Println("Hello", user.Gender)
+	update := bson.D{{"$set", bson.D{
+		{"displayName", user.DisplayName},
+		{"avatar", user.Avatar},
+		{"firstName", user.FirstName},
+		{"lastName", user.LastName},
+		{"gender", user.Gender},
+	}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (user *User) GetItemFromObjectId(objID primitive.ObjectID) error {

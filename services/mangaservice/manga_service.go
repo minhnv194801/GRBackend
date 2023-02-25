@@ -107,11 +107,28 @@ func GetMangaChapterList(mangaId string, position, count int) ([]model.Chapter, 
 	}
 }
 
+func CheckIsFavorite(mangaId, userId string) (bool, error) {
+	if userId == "" {
+		return false, nil
+	}
+	mangaObjId, err := primitive.ObjectIDFromHex(mangaId)
+	if err != nil {
+		return false, err
+	}
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return false, err
+	}
+	var manga model.Manga
+	manga.Id = mangaObjId
+	return manga.IsFavorited(userObjId)
+}
+
 func GetListRecommendation(count int) ([]model.Manga, error) {
 	return new(model.Manga).GetListRecommendManga(count)
 }
 
-func GetNewestList(position, count int) ([]model.Manga, error) {
+func GetNewestList(position, count int) ([]model.Manga, int, error) {
 	return new(model.Manga).GetNewestItemList(position, count)
 }
 

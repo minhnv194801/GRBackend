@@ -154,6 +154,23 @@ func (chapter *Chapter) GetMangaNewestChapterList(objID primitive.ObjectID, coun
 	return listItem, nil
 }
 
+func (chapter *Chapter) IsOwned(ownerId primitive.ObjectID) (bool, error) {
+	err := chapter.GetItemFromObjectId(chapter.Id)
+	if err != nil {
+		return false, err
+	}
+
+	if chapter.Price == 0 {
+		return true, err
+	}
+	for _, owner := range chapter.OwnedUsers {
+		if owner == ownerId {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func getExistedChapterID(mangaId primitive.ObjectID, name string) (primitive.ObjectID, error) {
 	coll, err := database.GetChapterCollection()
 	if err != nil {

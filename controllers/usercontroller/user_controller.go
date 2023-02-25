@@ -1,95 +1,69 @@
 package usercontroller
 
 import (
-	"fmt"
+	"bytes"
+	"io/ioutil"
+	"log"
 	"magna/requests"
 	"magna/responses"
 	"magna/services/sessionservice"
 	"magna/services/userservice"
 	"net/http"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
-func Login(c *gin.Context) {
-	req := requests.UserLoginRequest{}
-
-	err := c.ShouldBindJSON(&req)
+func GetUserInfo(c *gin.Context) {
+	sessionkey := c.GetHeader("Authorization")
+	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
-		return
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	user, err := userservice.GetUserInfo(userId)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 	}
 
-	sskey, refreshkey, userId, username, avatar, err := userservice.Login(req.Email, req.Password)
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, responses.LoginResponse{
-		Sessionkey: sskey,
-		Refreshkey: refreshkey,
-		Id:         userId,
-		IsLogin:    true,
-		Username:   username,
-		Avatar:     avatar,
-	})
+	var response responses.UserInfoResponse
+	response.Email = user.Email
+	response.FirstName = user.FirstName
+	response.LastName = user.LastName
+	response.Gender = user.Gender
+	response.Role = user.Role
+	c.IndentedJSON(http.StatusOK, response)
 }
 
-func Register(c *gin.Context) {
-	req := requests.UserRegisterRequest{}
+func UpdateUserInfo(c *gin.Context) {
+	var request requests.UpdateUserInfoRequest
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	println(string(body))
 
-	err := c.ShouldBindJSON(&req)
+	c.Request.Body = ioutil.NopCloser(bytes.NewReader(body))
+	err := c.BindJSON(&request)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	sskey, refreshkey, userId, username, avatar, err := userservice.Register(req.Email, req.Password, req.RePassword)
+	sessionkey := c.GetHeader("Authorization")
+	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	user, err := userservice.GetUserInfo(userId)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 	}
 
-	c.IndentedJSON(http.StatusOK, responses.RegisterResponse{
-		Sessionkey: sskey,
-		Refreshkey: refreshkey,
-		Id:         userId,
-		IsLogin:    true,
-		Username:   username,
-		Avatar:     avatar,
-	})
-}
-
-func RefreshSession(c *gin.Context) {
-	refreshkey := c.GetHeader("Authorization")
-
-	sskey, refreshkey, userId, username, avatar, err := sessionservice.RefreshSession(refreshkey)
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
+	user.FirstName = request.FirstName
+	user.LastName = request.LastName
+	user.DisplayName = request.Username
+	user.Avatar = request.Avatar
+	user.Gender = request.Gender
+	log.Println("request", request.Gender)
+	if user.UpdateInfo() != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 	}
 
-	c.IndentedJSON(http.StatusOK, responses.RefreshResponse{
-		Sessionkey: sskey,
-		Refreshkey: refreshkey,
-		Id:         userId,
-		IsLogin:    true,
-		Username:   username,
-		Avatar:     avatar,
-	})
-}
-
-func Test(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
-	fmt.Println(c.GetHeader("Authorization"))
-	token, err := sessionservice.CheckSession(authHeader)
-	if err != nil {
-		panic(err.Error())
-	}
-	claims := token.Claims.(jwt.MapClaims)
-	id := fmt.Sprintf("%v", claims["id"])
-	fmt.Println(id)
-	c.IndentedJSON(http.StatusOK, "")
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Success"})
 }

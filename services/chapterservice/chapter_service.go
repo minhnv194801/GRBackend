@@ -32,3 +32,14 @@ func GetSameMangaChapterList(chapterId string) ([]model.Chapter, error) {
 
 	return chapter.GetMangaChapterList(chapter.Manga)
 }
+
+func CheckIsOwner(chapterId, userId string) (bool, error) {
+	chapterObjId, err := primitive.ObjectIDFromHex(chapterId)
+	if err != nil {
+		return false, err
+	}
+	userObjId, _ := primitive.ObjectIDFromHex(userId)
+	var chapter model.Chapter
+	chapter.Id = chapterObjId
+	return chapter.IsOwned(userObjId)
+}

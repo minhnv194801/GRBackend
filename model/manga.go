@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"magna/database"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -211,10 +212,10 @@ func (manga *Manga) GetListRecommendManga(count int) ([]Manga, error) {
 	}
 }
 
-func (manga *Manga) GetNewestItemList(position, count int) ([]Manga, error) {
+func (manga *Manga) GetNewestItemList(position, count int) ([]Manga, int, error) {
 	coll, err := database.GetMangaCollection()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	listItem := make([]Manga, 0)
@@ -226,18 +227,23 @@ func (manga *Manga) GetNewestItemList(position, count int) ([]Manga, error) {
 
 	cursor, err := coll.Find(context.TODO(), filter, opts)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer cursor.Close(context.Background())
 	err = cursor.All(context.TODO(), &listItem)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	if count < len(listItem) {
-		return listItem[:count], nil
+		return listItem[:count], int(totalCount), nil
 	} else {
-		return listItem[:], nil
+		return listItem[:], int(totalCount), nil
 	}
 }
 
@@ -254,6 +260,60 @@ func (manga *Manga) GetTotalCount() (int, error) {
 	}
 
 	return int(count), nil
+}
+
+func (manga *Manga) Filter(query string, tags []string, position, count int) ([]Manga, int, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filter := bson.M{}
+	if len(tags) != 0 {
+		filter["tags"] = bson.D{{"$all", tags}}
+	}
+	if strings.Trim(query, " ") != "" {
+		filter["$or"] = []interface{}{
+			bson.D{{"name", primitive.Regex{Pattern: query, Options: "i"}}},
+			bson.D{{"description", primitive.Regex{Pattern: query, Options: "i"}}},
+		}
+	}
+	opts := options.Find().SetSkip(int64(position)).SetLimit(int64(count)).SetSort(bson.M{"updateTime": -1})
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	var listItem []Manga
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
+func (manga *Manga) IsFavorited(ownerId primitive.ObjectID) (bool, error) {
+	err := manga.GetItemFromObjectId(manga.Id)
+	if err != nil {
+		return false, err
+	}
+
+	for _, owner := range manga.FollowedUsers {
+		if owner == ownerId {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func getExistedTitleID(name string) (primitive.ObjectID, error) {

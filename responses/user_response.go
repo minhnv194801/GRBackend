@@ -1,28 +1,9 @@
 package responses
 
-type LoginResponse struct {
-	Sessionkey string `json:"sessionkey"`
-	Refreshkey string `json:"refreshkey"`
-	Id         string `json:"id"`
-	IsLogin    bool   `json:"isLogin"`
-	Username   string `json:"username"`
-	Avatar     string `json:"avatar"`
-}
-
-type RegisterResponse struct {
-	Sessionkey string `json:"sessionkey"`
-	Refreshkey string `json:"refreshkey"`
-	Id         string `json:"id"`
-	IsLogin    bool   `json:"isLogin"`
-	Username   string `json:"username"`
-	Avatar     string `json:"avatar"`
-}
-
-type RefreshResponse struct {
-	Sessionkey string `json:"sessionkey"`
-	Refreshkey string `json:"refreshkey"`
-	Id         string `json:"id"`
-	IsLogin    bool   `json:"isLogin"`
-	Username   string `json:"username"`
-	Avatar     string `json:"avatar"`
+type UserInfoResponse struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+	Gender    int    `json:"gender"`
+	Role      string `json:"role"`
 }

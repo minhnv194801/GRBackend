@@ -40,12 +40,13 @@ func TestGetRecommendItems(t *testing.T) {
 }
 
 func TestGetNewestItemList(t *testing.T) {
-	recommended, err := new(model.Manga).GetNewestItemList(8, 9)
+	recommended, totalCount, err := new(model.Manga).GetNewestItemList(8, 9)
 	if err != nil {
 		t.Error(err.Error())
 		return
 	}
 
+	t.Log(totalCount)
 	for _, recomm := range recommended {
 		t.Log(recomm.Name)
 	}
@@ -59,4 +60,17 @@ func TestGetTotalCount(t *testing.T) {
 	}
 
 	t.Log("Count:", count)
+}
+
+func TestFilter(t *testing.T) {
+	filtered, totalCount, err := new(model.Manga).Filter("Thanh", []string{}, 0, 9)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	t.Log(totalCount)
+	for _, item := range filtered {
+		t.Log(item.Name)
+	}
 }

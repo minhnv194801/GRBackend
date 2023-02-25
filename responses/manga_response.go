@@ -23,9 +23,14 @@ type ChapterListResponse struct {
 	UpdateTime uint   `json:"updateTime"`
 }
 
-type CommentListResponse struct {
+type CommentInfo struct {
 	Username   string `json:"username"`
 	Avatar     string `json:"avatar"`
 	Content    string `json:"content"`
 	UpdateTime uint   `json:"updateTime"`
+}
+
+type CommentListResponse struct {
+	Data       []CommentInfo `json:"data"`
+	TotalCount int           `json:"totalCount"`
 }

@@ -6,11 +6,16 @@ type NewestChapter struct {
 	UpdateTime uint   `json:"updateTime"`
 }
 
-type NewestResponse struct {
+type NewestItem struct {
 	Id          string          `json:"id"`
 	Title       string          `json:"title"`
 	Cover       string          `json:"cover"`
 	ChapterList []NewestChapter `json:"chapters"`
+}
+
+type NewestResponse struct {
+	Data       []NewestItem `json:"data"`
+	TotalCount int          `json:"totalCount"`
 }
 
 type HotItemsResponse struct {

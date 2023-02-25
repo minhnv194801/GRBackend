@@ -16,14 +16,14 @@ func CreateSession(id string) (sessionkey string, refreshkey string, err error) 
 	claims := jwt.MapClaims{}
 	claims["id"] = id
 	//TODO: put expired time in config
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix() //Token hết hạn sau 24 giờ
+	claims["exp"] = time.Now().Add(time.Minute * 15).Unix() //Token hết hạn sau 15 phut
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	sessionkey, err = token.SignedString(jwtSecretKey)
 	if err != nil {
 		return "", "", err
 	}
 
-	claims["exp"] = time.Now().Add(time.Hour * 48).Unix() //Token hết hạn sau 48 giờ
+	claims["exp"] = time.Now().Add(time.Hour * 24 * 7).Unix() //Token hết hạn sau 7 ngay
 	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	refreshkey, err = token.SignedString(refreshSecretKey)
 	if err != nil {
@@ -46,6 +46,7 @@ func RefreshSession(key string) (sessionkey string, refreshkey string, userId st
 
 	claims := token.Claims.(jwt.MapClaims)
 	userId = fmt.Sprintf("%v", claims["id"])
+
 	sessionkey, refreshkey, err = CreateSession(userId)
 	if err != nil {
 		return "", "", "", "", "", err
@@ -62,11 +63,31 @@ func RefreshSession(key string) (sessionkey string, refreshkey string, userId st
 	return sessionkey, refreshkey, userId, username, avatar, nil
 }
 
-func CheckSession(sessionkey string) (*jwt.Token, error) {
-	return jwt.Parse(sessionkey, func(t_ *jwt.Token) (interface{}, error) {
+func ExtractUserIdFromSessionKey(sessionkey string) (string, error) {
+	token, err := jwt.Parse(sessionkey, func(t_ *jwt.Token) (interface{}, error) {
 		if _, ok := t_.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method %v", t_.Header["alg"])
 		}
 		return jwtSecretKey, nil
 	})
+	if err != nil {
+		return "", err
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	userId := fmt.Sprintf("%v", claims["id"])
+	return userId, nil
+}
+
+func CheckSession(sessionkey string) (bool, error) {
+	token, err := jwt.Parse(sessionkey, func(t_ *jwt.Token) (interface{}, error) {
+		if _, ok := t_.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method %v", t_.Header["alg"])
+		}
+		return jwtSecretKey, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return token.Valid, nil
 }

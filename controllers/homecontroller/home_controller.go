@@ -73,15 +73,15 @@ func GetNewestList(c *gin.Context) {
 		return
 	}
 
-	newestList, err := mangaservice.GetNewestList(request.Postition, request.Count)
+	newestList, totalCount, err := mangaservice.GetNewestList(request.Postition, request.Count)
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
 		return
 	}
 
-	var responseList []responses.NewestResponse
+	var responseList responses.NewestResponse
 	for _, item := range newestList {
-		var response responses.NewestResponse
+		var response responses.NewestItem
 		response.Id = item.Id.Hex()
 		response.Title = item.Name
 		response.Cover = item.Cover
@@ -93,8 +93,9 @@ func GetNewestList(c *gin.Context) {
 			chapterItem.UpdateTime = chapter.UpdateTime
 			response.ChapterList = append(response.ChapterList, chapterItem)
 		}
-		responseList = append(responseList, response)
+		responseList.Data = append(responseList.Data, response)
 	}
+	responseList.TotalCount = totalCount
 
 	c.IndentedJSON(http.StatusOK, responseList)
 }
