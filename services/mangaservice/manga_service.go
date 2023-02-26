@@ -107,6 +107,10 @@ func GetMangaChapterList(mangaId string, position, count int) ([]model.Chapter, 
 	}
 }
 
+func GetUserFavoriteList(userId string) ([]model.Manga, error) {
+	return nil, nil
+}
+
 func CheckIsFavorite(mangaId, userId string) (bool, error) {
 	if userId == "" {
 		return false, nil

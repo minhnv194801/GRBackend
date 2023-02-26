@@ -43,3 +43,16 @@ func CheckIsOwner(chapterId, userId string) (bool, error) {
 	chapter.Id = chapterObjId
 	return chapter.IsOwned(userObjId)
 }
+
+func GroupMangaToChapter(chapterId []primitive.ObjectID) (map[string][]model.Chapter, error) {
+	listItem, err := new(model.Chapter).GetItemListFromObjectIdGroupByManga(chapterId)
+	if err != nil {
+		return nil, err
+	}
+	resMap := make(map[string][]model.Chapter)
+	for _, item := range listItem {
+		resMap[item.Manga.Hex()] = append(resMap[item.Manga.Hex()], item)
+	}
+
+	return resMap, nil
+}

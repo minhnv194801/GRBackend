@@ -1,11 +1,11 @@
 package usercontroller
 
 import (
-	"bytes"
-	"io/ioutil"
 	"log"
 	"magna/requests"
 	"magna/responses"
+	"magna/services/chapterservice"
+	"magna/services/mangaservice"
 	"magna/services/sessionservice"
 	"magna/services/userservice"
 	"net/http"
@@ -35,10 +35,7 @@ func GetUserInfo(c *gin.Context) {
 
 func UpdateUserInfo(c *gin.Context) {
 	var request requests.UpdateUserInfoRequest
-	body, _ := ioutil.ReadAll(c.Request.Body)
-	println(string(body))
 
-	c.Request.Body = ioutil.NopCloser(bytes.NewReader(body))
 	err := c.BindJSON(&request)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -66,4 +63,40 @@ func UpdateUserInfo(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Success"})
+}
+
+func GetOwnedChapter(c *gin.Context) {
+	sessionkey := c.GetHeader("Authorization")
+	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	user, err := userservice.GetUserInfo(userId)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	ownedMangaMap, err := chapterservice.GroupMangaToChapter(user.OwnedChapters)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	var response []responses.OwnedChapterResponse
+	for mangaId, chapterList := range ownedMangaMap {
+		var res responses.OwnedChapterResponse
+		manga, err := mangaservice.GetMangaInfo(mangaId)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		res.Id = manga.Id.Hex()
+		res.Title = manga.Name
+		res.Cover = manga.Cover
+		for _, chapter := range chapterList {
+			var chapterResponse responses.OwnedChapterItem
+			chapterResponse.Id = chapter.Id.Hex()
+			chapterResponse.Title = chapter.Name
+			res.Chapters = append(res.Chapters, chapterResponse)
+		}
+		response = append(response, res)
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
 }

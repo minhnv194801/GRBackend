@@ -190,3 +190,79 @@ func getExistedChapterID(mangaId primitive.ObjectID, name string) (primitive.Obj
 	}
 	return doc.Id, nil
 }
+
+func (chapter *Chapter) GetItemListFromObjectIdGroupByManga(objID []primitive.ObjectID) ([]Chapter, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Chapter, 0)
+	aggregatePipeline := bson.A{}
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$match",
+				bson.D{
+					{"_id",
+						bson.D{
+							{"$in",
+								objID,
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$lookup",
+				bson.D{
+					{"from", "Manga"},
+					{"localField", "manga"},
+					{"foreignField", "_id"},
+					{"as", "output"},
+				},
+			},
+		},
+	)
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$addFields",
+				bson.D{
+					{"order",
+						bson.D{
+							{"$indexOfArray",
+								bson.A{
+									bson.D{{"$first", "$output.chapters"}},
+									"$_id",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+	aggregatePipeline = append(aggregatePipeline,
+		bson.D{
+			{"$sort",
+				bson.D{
+					{"output.0.name", 1},
+					{"order", 1},
+				},
+			},
+		},
+	)
+	cursor, err := coll.Aggregate(context.TODO(), aggregatePipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
+}

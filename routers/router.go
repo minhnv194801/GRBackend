@@ -54,6 +54,7 @@ func InitRouter() *gin.Engine {
 	{
 		apiv1User.GET("/info", usercontroller.GetUserInfo)
 		apiv1User.POST("/info", usercontroller.UpdateUserInfo)
+		apiv1User.GET("/owned", usercontroller.GetOwnedChapter)
 	}
 
 	return router
