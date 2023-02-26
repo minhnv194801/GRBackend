@@ -7,6 +7,7 @@ import (
 	"magna/responses"
 	"magna/services/chapterservice"
 	"magna/services/mangaservice"
+	"magna/services/reportservice"
 	"magna/services/sessionservice"
 	"magna/services/userservice"
 	"net/http"
@@ -19,10 +20,12 @@ func GetUserInfo(c *gin.Context) {
 	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 	user, err := userservice.GetUserInfo(userId)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 
 	var response responses.UserInfoResponse
@@ -47,10 +50,12 @@ func UpdateUserInfo(c *gin.Context) {
 	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 	user, err := userservice.GetUserInfo(userId)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 
 	user.FirstName = request.FirstName
@@ -61,6 +66,7 @@ func UpdateUserInfo(c *gin.Context) {
 	log.Println("request", request.Gender)
 	if user.UpdateInfo() != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Success"})
@@ -71,14 +77,17 @@ func GetOwnedChapter(c *gin.Context) {
 	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 	user, err := userservice.GetUserInfo(userId)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 	ownedMangaMap, err := chapterservice.GroupMangaToChapter(user.OwnedChapters)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 	var response []responses.OwnedChapterResponse
 	for mangaId, chapterList := range ownedMangaMap {
@@ -86,6 +95,7 @@ func GetOwnedChapter(c *gin.Context) {
 		manga, err := mangaservice.GetMangaInfo(mangaId)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+			return
 		}
 		res.Id = manga.Id.Hex()
 		res.Title = manga.Name
@@ -107,10 +117,12 @@ func GetFavoriteMangaList(c *gin.Context) {
 	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 	user, err := userservice.GetUserInfo(userId)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
 	}
 	favoriteList, err := new(model.Manga).GetItemListFromObjectId(user.FollowMangas)
 	if err != nil {
@@ -128,10 +140,40 @@ func GetFavoriteMangaList(c *gin.Context) {
 		for _, chapter := range chapterList {
 			var chapterItem responses.FavoriteChapter
 			chapterItem.Id = chapter.Id.Hex()
-			chapterItem.Name = chapter.Name
+			chapterItem.Title = chapter.Name
 			chapterItem.UpdateTime = chapter.UpdateTime
 			response.ChapterList = append(response.ChapterList, chapterItem)
 		}
+		responseList = append(responseList, response)
+	}
+
+	c.IndentedJSON(http.StatusOK, responseList)
+}
+
+func GetUserReport(c *gin.Context) {
+	sessionkey := c.GetHeader("Authorization")
+	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
+	}
+	reportList, err := reportservice.GetUserReport(userId)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
+	}
+	var responseList []responses.ReportResponse
+	for _, report := range reportList {
+		var response responses.ReportResponse
+		var chapter model.Chapter
+		chapter.GetItemFromObjectId(report.Chapter)
+		response.ChapterTitle = chapter.Name
+		response.ChapterCover = chapter.Cover
+		response.ChapterId = chapter.Id.Hex()
+		response.Content = report.Content
+		response.Response = report.Response
+		response.Status = report.Status
+		response.TimeCreated = int(report.TimeCreated)
 		responseList = append(responseList, response)
 	}
 

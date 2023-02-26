@@ -1,7 +1,6 @@
 package mangacontroller
 
 import (
-	"fmt"
 	"log"
 	"magna/model"
 	"magna/requests"
@@ -14,16 +13,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetMangaInfo(c *gin.Context) {
 	id := c.Param("mangaid")
 	log.Println("MangaId:", id)
-	//TODO: get user id from token?
 	sessionkey := c.GetHeader("Authorization")
 	userId, _ := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
-
-	// fmt.Println(c.Request.Header["Authorization"])
 
 	var response responses.MangaInfoResponse
 
@@ -43,13 +40,24 @@ func GetMangaInfo(c *gin.Context) {
 	}
 	response.Status = uint(manga.Status)
 	response.Tags = manga.Tags
-	// TODO: check if user already favorite manga
 	isFavorite, _ := mangaservice.CheckIsFavorite(id, userId)
 	response.IsFavorite = isFavorite
 	// TODO: rating services
-	response.UserRating = 0
-	response.AvgRating = 0
-	response.RatingCount = 0
+	objId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	if manga.Rated == nil {
+		manga.Rated = make(map[primitive.ObjectID]int)
+	}
+	response.UserRating = uint(manga.Rated[objId])
+	var sum float32
+	for _, value := range manga.Rated {
+		sum += float32(value)
+	}
+	response.AvgRating = sum / float32(len(manga.Rated))
+	response.RatingCount = uint(len(manga.Rated))
 	response.Description = manga.Description
 	response.ChapterCount = len(manga.Chapters)
 
@@ -67,8 +75,6 @@ func GetMangaChapterList(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
 		return
 	}
-	//TODO: get user id from token?
-	fmt.Println(c.GetHeader("Authorization"))
 
 	var responseList []responses.ChapterListResponse
 	chapterList, err := mangaservice.GetMangaChapterList(id, request.Postition, request.Count)
@@ -83,7 +89,6 @@ func GetMangaChapterList(c *gin.Context) {
 		response.Title = chapter.Name
 		response.Cover = chapter.Cover
 		response.Price = chapter.Price
-		// TODO: Check user ownership
 		isOwned, _ := chapterservice.CheckIsOwner(chapter.Id.Hex(), userId)
 		response.IsOwned = isOwned
 		response.UpdateTime = chapter.UpdateTime
@@ -159,10 +164,12 @@ func SetRating(c *gin.Context) {
 	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
 	}
 	err = ratingservice.SetRating(userId, id, request.Rating)
 	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
 	}
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Success"})
 }

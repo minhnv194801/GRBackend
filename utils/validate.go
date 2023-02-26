@@ -1,6 +1,9 @@
 package utils
 
-import "net/mail"
+import (
+	"net/mail"
+	"strings"
+)
 
 func ValidateEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
@@ -8,5 +11,9 @@ func ValidateEmail(email string) bool {
 }
 
 func ValidatePassword(password string) bool {
-	return len(password) != 0
+	return !CheckEmptyString(password)
+}
+
+func CheckEmptyString(str string) bool {
+	return len(strings.Trim(str, " ")) == 0
 }

@@ -8,7 +8,7 @@ type MangaInfoResponse struct {
 	Status       uint     `json:"status"`
 	Tags         []string `json:"tags"`
 	UserRating   uint     `json:"userRating"`
-	AvgRating    uint     `json:"avgRating"`
+	AvgRating    float32  `json:"avgRating"`
 	RatingCount  uint     `json:"ratingCount"`
 	Description  string   `json:"description"`
 	ChapterCount int      `json:"chapterCount"`

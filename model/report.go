@@ -5,7 +5,9 @@ import (
 	"magna/database"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Report struct {
@@ -50,4 +52,26 @@ func (report *Report) CreateNewReport() (primitive.ObjectID, error) {
 
 	report.Id = result.InsertedID.(primitive.ObjectID)
 	return result.InsertedID.(primitive.ObjectID), nil
+}
+
+func (report *Report) GetUserReport(userId primitive.ObjectID) ([]Report, error) {
+	coll, err := database.GetReportCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Report, 0)
+	filter := bson.M{"user": userId}
+	opts := options.Find().SetSort(bson.D{{"timeCreated", -1}})
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
 }

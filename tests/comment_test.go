@@ -2,6 +2,7 @@ package tests
 
 import (
 	"magna/model"
+	"magna/utils"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,4 +15,8 @@ func TestGetListCommentFromMangaId(t *testing.T) {
 	}
 	t.Log("OK")
 	t.Log(new(model.Comment).GetListCommentFromMangaId(objId, 0, 10))
+}
+
+func TestCheckEmptyStr(t *testing.T) {
+	t.Log(utils.CheckEmptyString("          "))
 }

@@ -59,6 +59,8 @@ func InitRouter() *gin.Engine {
 		apiv1User.GET("/info", usercontroller.GetUserInfo)
 		apiv1User.POST("/info", usercontroller.UpdateUserInfo)
 		apiv1User.GET("/owned", usercontroller.GetOwnedChapter)
+		apiv1User.GET("/report", usercontroller.GetUserReport)
+		apiv1User.GET("/favorite", usercontroller.GetFavoriteMangaList)
 	}
 
 	apiv1.POST("/report/:chapterid", reportcontroller.CreateNewReport)

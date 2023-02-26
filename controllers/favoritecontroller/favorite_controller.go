@@ -14,10 +14,12 @@ func SetFavorite(c *gin.Context) {
 	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
 	}
 	err = mangaservice.SetUserFavorite(userId, id)
 	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
 	}
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Success"})
 }

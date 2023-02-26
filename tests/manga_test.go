@@ -3,7 +3,6 @@ package tests
 import (
 	"magna/model"
 	"testing"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -77,11 +76,9 @@ func TestFilter(t *testing.T) {
 	}
 }
 
-func TestNewField(t *testing.T) {
-	manga := new(model.Manga)
-	objId, _ := primitive.ObjectIDFromHex("63f853a88b0c09f7346b721d")
-	manga.Rated = make(map[primitive.ObjectID]int)
-	manga.Rated[objId] = 5
-	manga.UpdateTime = uint(time.Now().Unix())
-	manga.InsertToDatabase()
+func TestGroupChapterManga(t *testing.T) {
+	chapter := new(model.Chapter)
+	objId, _ := primitive.ObjectIDFromHex("63d7619d1adb5dbe924794cc")
+	objId2, _ := primitive.ObjectIDFromHex("63d7619d1adb5dbe924794cd")
+	t.Log(chapter.GetItemListFromObjectIdGroupByManga([]primitive.ObjectID{objId, objId2}))
 }

@@ -22,7 +22,7 @@ type OwnedChapterResponse struct {
 
 type FavoriteChapter struct {
 	Id         string `json:"id"`
-	Name       string `json:"name"`
+	Title      string `json:"title"`
 	UpdateTime uint   `json:"updateTime"`
 }
 
@@ -31,4 +31,14 @@ type FavoriteItem struct {
 	Title       string            `json:"title"`
 	Cover       string            `json:"cover"`
 	ChapterList []FavoriteChapter `json:"chapters"`
+}
+
+type ReportResponse struct {
+	ChapterId    string `json:"chapterId"`
+	ChapterCover string `json:"chapterCover"`
+	ChapterTitle string `json:"chapterTitle"`
+	TimeCreated  int    `json:"timeCreated"`
+	Content      string `json:"content"`
+	Status       int    `json:"status"`
+	Response     string `json:"response"`
 }

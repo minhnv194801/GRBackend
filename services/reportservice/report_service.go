@@ -24,3 +24,12 @@ func CreateNewReport(userId, chapterId, reportContent string) error {
 
 	return err
 }
+
+func GetUserReport(userId string) ([]model.Report, error) {
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return new(model.Report).GetUserReport(userObjId)
+}
