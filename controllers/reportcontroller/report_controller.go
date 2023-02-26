@@ -21,7 +21,7 @@ func CreateNewReport(c *gin.Context) {
 	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 	}
-	chapterId := c.Param("chapterId")
+	chapterId := c.Param("chapterid")
 	err = reportservice.CreateNewReport(userId, chapterId, request.Content)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})

@@ -2,9 +2,12 @@ package routers
 
 import (
 	"magna/controllers/authcontroller"
+	"magna/controllers/commentcontroller"
+	"magna/controllers/favoritecontroller"
 	"magna/controllers/homecontroller"
 	"magna/controllers/mangacontroller"
 	"magna/controllers/readcontroller"
+	"magna/controllers/reportcontroller"
 	"magna/controllers/searchcontroller"
 	"magna/controllers/usercontroller"
 	"magna/middleware"
@@ -38,6 +41,7 @@ func InitRouter() *gin.Engine {
 		apiv1Manga.GET("/:mangaid", mangacontroller.GetMangaInfo)
 		apiv1Manga.POST("/:mangaid/chapterlist", mangacontroller.GetMangaChapterList)
 		apiv1Manga.POST("/:mangaid/commentlist", mangacontroller.GetCommentList)
+		apiv1Manga.POST("/:mangaid/rate", mangacontroller.SetRating)
 	}
 
 	apiv1Read := apiv1.Group("/read")
@@ -56,6 +60,10 @@ func InitRouter() *gin.Engine {
 		apiv1User.POST("/info", usercontroller.UpdateUserInfo)
 		apiv1User.GET("/owned", usercontroller.GetOwnedChapter)
 	}
+
+	apiv1.POST("/report/:chapterid", reportcontroller.CreateNewReport)
+	apiv1Manga.POST("/comment/:mangaid", commentcontroller.CreateNewComment)
+	apiv1Manga.POST("/favorite/:mangaid", favoritecontroller.SetFavorite)
 
 	return router
 }

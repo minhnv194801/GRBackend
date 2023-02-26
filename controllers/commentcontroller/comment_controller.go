@@ -21,7 +21,7 @@ func CreateNewComment(c *gin.Context) {
 	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 	}
-	mangaId := c.Param("mangaId")
+	mangaId := c.Param("mangaid")
 	err = commentservice.CreateNewComment(userId, mangaId, request.Content)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})

@@ -12,19 +12,20 @@ import (
 )
 
 type User struct {
-	Id            primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
-	Email         string               `bson:"email"`
-	Password      string               `bson:"password"`
-	Role          string               `bson:"role"`
-	DisplayName   string               `bson:"displayName"`
-	Avatar        string               `bson:"avatar"`
-	FirstName     string               `bson:"firstName"`
-	LastName      string               `bson:"lastName"`
-	Gender        int                  `bson:"gender"`
-	FollowMangas  []primitive.ObjectID `bson:"followMangas"`
-	OwnedChapters []primitive.ObjectID `bson:"ownedChapters"`
-	Comments      []primitive.ObjectID `bson:"comments"`
-	Reports       []primitive.ObjectID `bson:"reports"`
+	Id            primitive.ObjectID         `bson:"_id,omitempty" json:"id"`
+	Email         string                     `bson:"email"`
+	Password      string                     `bson:"password"`
+	Role          string                     `bson:"role"`
+	DisplayName   string                     `bson:"displayName"`
+	Avatar        string                     `bson:"avatar"`
+	FirstName     string                     `bson:"firstName"`
+	LastName      string                     `bson:"lastName"`
+	Gender        int                        `bson:"gender"`
+	FollowMangas  []primitive.ObjectID       `bson:"followMangas"`
+	OwnedChapters []primitive.ObjectID       `bson:"ownedChapters"`
+	Comments      []primitive.ObjectID       `bson:"comments"`
+	Reports       []primitive.ObjectID       `bson:"reports"`
+	Rate          map[primitive.ObjectID]int `bson:"rate"`
 }
 
 func (user *User) InsertToDatabase() (primitive.ObjectID, error) {
@@ -119,6 +120,7 @@ func (user *User) CreateNewUser() (primitive.ObjectID, error) {
 	user.FirstName = "Tên"
 	user.LastName = "Họ"
 	user.Gender = 0
+	user.Rate = make(map[primitive.ObjectID]int)
 
 	coll, err := database.GetUserCollection()
 	if err != nil {
@@ -132,6 +134,21 @@ func (user *User) CreateNewUser() (primitive.ObjectID, error) {
 
 	user.Id = result.InsertedID.(primitive.ObjectID)
 	return result.InsertedID.(primitive.ObjectID), nil
+}
+
+func (user *User) SetRate() error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"rate", user.Rate}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (user *User) SetFavoriteManga(mangaId primitive.ObjectID) error {

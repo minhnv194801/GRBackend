@@ -11,19 +11,20 @@ import (
 )
 
 type Manga struct {
-	Id            primitive.ObjectID   `bson:"_id,omitempty"`
-	Name          string               `bson:"name"`
-	AlternateName []string             `bson:"alternateName"`
-	Author        []string             `bson:"author"`
-	Cover         string               `bson:"cover"`
-	Description   string               `bson:"description"`
-	Status        Status               `bson:"status"`
-	UpdateTime    uint                 `bson:"updateTime"`
-	IsRecommended bool                 `bson:"isRecommended"`
-	Tags          []string             `bson:"tags"`
-	FollowedUsers []primitive.ObjectID `bson:"followedUsers"`
-	Chapters      []primitive.ObjectID `bson:"chapters"`
-	Comments      []primitive.ObjectID `bson:"comments"`
+	Id            primitive.ObjectID         `bson:"_id,omitempty"`
+	Name          string                     `bson:"name"`
+	AlternateName []string                   `bson:"alternateName"`
+	Author        []string                   `bson:"author"`
+	Cover         string                     `bson:"cover"`
+	Description   string                     `bson:"description"`
+	Status        Status                     `bson:"status"`
+	UpdateTime    uint                       `bson:"updateTime"`
+	IsRecommended bool                       `bson:"isRecommended"`
+	Tags          []string                   `bson:"tags"`
+	FollowedUsers []primitive.ObjectID       `bson:"followedUsers"`
+	Chapters      []primitive.ObjectID       `bson:"chapters"`
+	Comments      []primitive.ObjectID       `bson:"comments"`
+	Rated         map[primitive.ObjectID]int `bson:"rated"`
 }
 
 type Status int
@@ -66,6 +67,21 @@ func (manga *Manga) UpdateChapter(chapter *Chapter) error {
 	}
 	filter := bson.D{{"_id", manga.Id}}
 	update := bson.D{{"$set", bson.D{{"chapters", manga.Chapters}, {"updateTime", manga.UpdateTime}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (manga *Manga) SetRated() error {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", manga.Id}}
+	update := bson.D{{"$set", bson.D{{"rated", manga.Rated}}}}
 	_, err = coll.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return err

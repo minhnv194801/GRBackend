@@ -9,6 +9,7 @@ import (
 	"magna/services/chapterservice"
 	"magna/services/commentservice"
 	"magna/services/mangaservice"
+	"magna/services/ratingservice"
 	"magna/services/sessionservice"
 	"net/http"
 
@@ -146,14 +147,20 @@ func GetMangaCommentCount(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, totalCount)
 }
 
-func SetFavorite(c *gin.Context) {
+func SetRating(c *gin.Context) {
 	id := c.Param("mangaid")
+	var request requests.RatingRequest
+	err := c.BindJSON(&request)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
+		return
+	}
 	sessionkey := c.GetHeader("Authorization")
 	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 	}
-	err = mangaservice.SetUserFavorite(userId, id)
+	err = ratingservice.SetRating(userId, id, request.Rating)
 	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 	}
