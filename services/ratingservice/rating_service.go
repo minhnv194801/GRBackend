@@ -29,11 +29,11 @@ func SetRating(userId, mangaId string, rate int) error {
 	if manga.Rated == nil {
 		manga.Rated = make(map[primitive.ObjectID]int)
 	}
-	manga.Rated[mangaObjId] = rate
+	manga.Rated[userObjId] = rate
 	if user.Rate == nil {
 		user.Rate = make(map[primitive.ObjectID]int)
 	}
-	user.Rate[userObjId] = rate
+	user.Rate[mangaObjId] = rate
 
 	err = manga.SetRated()
 	if err != nil {

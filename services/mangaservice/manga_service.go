@@ -138,6 +138,7 @@ func SetUserFavorite(userId, mangaId string) error {
 
 func CheckIsFavorite(mangaId, userId string) (bool, error) {
 	if userId == "" {
+		fmt.Println("WTF")
 		return false, nil
 	}
 	mangaObjId, err := primitive.ObjectIDFromHex(mangaId)
@@ -150,6 +151,7 @@ func CheckIsFavorite(mangaId, userId string) (bool, error) {
 	}
 	var manga model.Manga
 	manga.Id = mangaObjId
+	fmt.Println("Hello")
 	return manga.IsFavorited(userObjId)
 }
 

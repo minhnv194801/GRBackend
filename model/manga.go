@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"fmt"
 	"magna/database"
 	"strings"
 
@@ -354,6 +355,8 @@ func (manga *Manga) IsFavorited(ownerId primitive.ObjectID) (bool, error) {
 		return false, err
 	}
 
+	fmt.Println("Hello")
+	fmt.Println(manga.FollowedUsers)
 	for _, owner := range manga.FollowedUsers {
 		if owner == ownerId {
 			return true, nil

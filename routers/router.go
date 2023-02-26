@@ -64,8 +64,8 @@ func InitRouter() *gin.Engine {
 	}
 
 	apiv1.POST("/report/:chapterid", reportcontroller.CreateNewReport)
-	apiv1Manga.POST("/comment/:mangaid", commentcontroller.CreateNewComment)
-	apiv1Manga.POST("/favorite/:mangaid", favoritecontroller.SetFavorite)
+	apiv1.POST("/comment/:mangaid", commentcontroller.CreateNewComment)
+	apiv1.POST("/favorite/:mangaid", favoritecontroller.SetFavorite)
 
 	return router
 }

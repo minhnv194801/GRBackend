@@ -1,6 +1,7 @@
 package mangacontroller
 
 import (
+	"fmt"
 	"log"
 	"magna/model"
 	"magna/requests"
@@ -42,21 +43,23 @@ func GetMangaInfo(c *gin.Context) {
 	response.Tags = manga.Tags
 	isFavorite, _ := mangaservice.CheckIsFavorite(id, userId)
 	response.IsFavorite = isFavorite
-	// TODO: rating services
 	objId, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
 	if manga.Rated == nil {
 		manga.Rated = make(map[primitive.ObjectID]int)
 	}
-	response.UserRating = uint(manga.Rated[objId])
+	fmt.Println(manga.Rated[objId])
+	if err == nil {
+		response.UserRating = uint(manga.Rated[objId])
+	} else {
+		response.UserRating = 0
+	}
 	var sum float32
 	for _, value := range manga.Rated {
 		sum += float32(value)
 	}
-	response.AvgRating = sum / float32(len(manga.Rated))
+	if len(manga.Rated) != 0 {
+		response.AvgRating = sum / float32(len(manga.Rated))
+	}
 	response.RatingCount = uint(len(manga.Rated))
 	response.Description = manga.Description
 	response.ChapterCount = len(manga.Chapters)
