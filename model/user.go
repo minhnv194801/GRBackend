@@ -134,6 +134,36 @@ func (user *User) CreateNewUser() (primitive.ObjectID, error) {
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
+func (user *User) SetFavoriteManga(mangaId primitive.ObjectID) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+	for index, followMangas := range user.FollowMangas {
+		if followMangas == mangaId {
+			ret := make([]primitive.ObjectID, 0)
+			ret = append(ret, user.FollowMangas[:index]...)
+			user.FollowMangas = append(ret, user.FollowMangas[index+1:]...)
+			filter := bson.D{{"_id", user.Id}}
+			update := bson.D{{"$set", bson.D{{"followMangas", user.FollowMangas}}}}
+			_, err = coll.UpdateOne(context.TODO(), filter, update)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	user.FollowMangas = append(user.FollowMangas, mangaId)
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"followMangas", user.FollowMangas}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func checkExistedEmail(email string) (bool, error) {
 	coll, err := database.GetUserCollection()
 	if err != nil {

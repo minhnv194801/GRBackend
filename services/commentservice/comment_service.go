@@ -21,3 +21,22 @@ func GetMangaCommentCount(mangaId string) (int, error) {
 	}
 	return new(model.Comment).GetMangaCommentCount(objId)
 }
+
+func CreateNewComment(userId, mangaId, commentContent string) error {
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return err
+	}
+	mangaObjId, err := primitive.ObjectIDFromHex(mangaId)
+	if err != nil {
+		return err
+	}
+	comment := new(model.Comment)
+	comment.Manga = mangaObjId
+	comment.User = userObjId
+	comment.Content = commentContent
+
+	_, err = comment.CreateNewComment()
+
+	return err
+}

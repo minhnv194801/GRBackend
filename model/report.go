@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"magna/database"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -18,6 +19,25 @@ type Report struct {
 }
 
 func (report *Report) InsertToDatabase() (primitive.ObjectID, error) {
+	coll, err := database.GetReportCollection()
+	if err != nil {
+		return [12]byte{}, err
+	}
+
+	result, err := coll.InsertOne(context.TODO(), report)
+	if err != nil {
+		return [12]byte{}, err
+	}
+
+	report.Id = result.InsertedID.(primitive.ObjectID)
+	return result.InsertedID.(primitive.ObjectID), nil
+}
+
+func (report *Report) CreateNewReport() (primitive.ObjectID, error) {
+	report.TimeCreated = uint(time.Now().Unix())
+	report.Status = 0
+	report.Response = ""
+
 	coll, err := database.GetReportCollection()
 	if err != nil {
 		return [12]byte{}, err

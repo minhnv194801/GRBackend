@@ -73,6 +73,36 @@ func (manga *Manga) UpdateChapter(chapter *Chapter) error {
 	return nil
 }
 
+func (manga *Manga) SetUserFavorite(user primitive.ObjectID) error {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+	for index, followedUser := range manga.FollowedUsers {
+		if followedUser == user {
+			ret := make([]primitive.ObjectID, 0)
+			ret = append(ret, manga.FollowedUsers[:index]...)
+			manga.FollowedUsers = append(ret, manga.FollowedUsers[index+1:]...)
+			filter := bson.D{{"_id", manga.Id}}
+			update := bson.D{{"$set", bson.D{{"followedUsers", manga.FollowedUsers}}}}
+			_, err = coll.UpdateOne(context.TODO(), filter, update)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	manga.FollowedUsers = append(manga.FollowedUsers, user)
+	filter := bson.D{{"_id", manga.Id}}
+	update := bson.D{{"$set", bson.D{{"followedUsers", manga.FollowedUsers}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (manga *Manga) GetItemFromObjectId(objID primitive.ObjectID) error {
 	coll, err := database.GetMangaCollection()
 	if err != nil {

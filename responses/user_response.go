@@ -19,3 +19,16 @@ type OwnedChapterResponse struct {
 	Title    string             `json:"title"`
 	Chapters []OwnedChapterItem `json:"chapters"`
 }
+
+type FavoriteChapter struct {
+	Id         string `json:"id"`
+	Name       string `json:"name"`
+	UpdateTime uint   `json:"updateTime"`
+}
+
+type FavoriteItem struct {
+	Id          string            `json:"id"`
+	Title       string            `json:"title"`
+	Cover       string            `json:"cover"`
+	ChapterList []FavoriteChapter `json:"chapters"`
+}

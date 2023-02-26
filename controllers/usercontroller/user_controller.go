@@ -2,6 +2,7 @@ package usercontroller
 
 import (
 	"log"
+	"magna/model"
 	"magna/requests"
 	"magna/responses"
 	"magna/services/chapterservice"
@@ -99,4 +100,40 @@ func GetOwnedChapter(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
+}
+
+func GetFavoriteMangaList(c *gin.Context) {
+	sessionkey := c.GetHeader("Authorization")
+	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	user, err := userservice.GetUserInfo(userId)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	favoriteList, err := new(model.Manga).GetItemListFromObjectId(user.FollowMangas)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
+		return
+	}
+
+	var responseList []responses.FavoriteItem
+	for _, item := range favoriteList {
+		var response responses.FavoriteItem
+		response.Id = item.Id.Hex()
+		response.Title = item.Name
+		response.Cover = item.Cover
+		chapterList, _ := new(model.Chapter).GetMangaNewestChapterList(item.Id, 3)
+		for _, chapter := range chapterList {
+			var chapterItem responses.FavoriteChapter
+			chapterItem.Id = chapter.Id.Hex()
+			chapterItem.Name = chapter.Name
+			chapterItem.UpdateTime = chapter.UpdateTime
+			response.ChapterList = append(response.ChapterList, chapterItem)
+		}
+		responseList = append(responseList, response)
+	}
+
+	c.IndentedJSON(http.StatusOK, responseList)
 }

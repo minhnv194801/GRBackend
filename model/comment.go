@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"magna/database"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -67,4 +68,21 @@ func (comment *Comment) GetMangaCommentCount(mangaId primitive.ObjectID) (int, e
 	}
 
 	return int(count), nil
+}
+
+func (comment *Comment) CreateNewComment() (primitive.ObjectID, error) {
+	comment.TimeCreated = uint(time.Now().Unix())
+
+	coll, err := database.GetCommentCollection()
+	if err != nil {
+		return [12]byte{}, err
+	}
+
+	result, err := coll.InsertOne(context.TODO(), comment)
+	if err != nil {
+		return [12]byte{}, err
+	}
+
+	comment.Id = result.InsertedID.(primitive.ObjectID)
+	return result.InsertedID.(primitive.ObjectID), nil
 }

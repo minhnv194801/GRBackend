@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"magna/model"
+	"magna/services/userservice"
 	"sort"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -109,6 +110,30 @@ func GetMangaChapterList(mangaId string, position, count int) ([]model.Chapter, 
 
 func GetUserFavoriteList(userId string) ([]model.Manga, error) {
 	return nil, nil
+}
+
+func SetUserFavorite(userId, mangaId string) error {
+	userObjId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return err
+	}
+	mangaObjId, err := primitive.ObjectIDFromHex(mangaId)
+	if err != nil {
+		return err
+	}
+	manga, err := GetMangaInfo(mangaId)
+	if err != nil {
+		return err
+	}
+	user, err := userservice.GetUserInfo(userId)
+	if err != nil {
+		return err
+	}
+	err = manga.SetUserFavorite(userObjId)
+	if err != nil {
+		return err
+	}
+	return user.SetFavoriteManga(mangaObjId)
 }
 
 func CheckIsFavorite(mangaId, userId string) (bool, error) {
