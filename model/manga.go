@@ -349,7 +349,7 @@ func (manga *Manga) Filter(query string, tags []string, position, count int) ([]
 	}
 }
 
-func (manga *Manga) IsFavorited(ownerId primitive.ObjectID) (bool, error) {
+func (manga *Manga) IsFavorited(userId primitive.ObjectID) (bool, error) {
 	err := manga.GetItemFromObjectId(manga.Id)
 	if err != nil {
 		return false, err
@@ -357,8 +357,8 @@ func (manga *Manga) IsFavorited(ownerId primitive.ObjectID) (bool, error) {
 
 	fmt.Println("Hello")
 	fmt.Println(manga.FollowedUsers)
-	for _, owner := range manga.FollowedUsers {
-		if owner == ownerId {
+	for _, user := range manga.FollowedUsers {
+		if user == userId {
 			return true, nil
 		}
 	}
