@@ -124,7 +124,7 @@ func GetFavoriteMangaList(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 		return
 	}
-	favoriteList, err := new(model.Manga).GetItemListFromObjectId(user.FollowMangas)
+	favoriteList, err := new(model.Manga).GetNewestItemListFromObjectId(user.FollowMangas)
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
 		return

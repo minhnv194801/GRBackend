@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"magna/database"
+	"magna/utils"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -202,6 +203,29 @@ func (manga *Manga) GetItemListFromObjectId(objID []primitive.ObjectID) ([]Manga
 	return listItem, nil
 }
 
+func (manga *Manga) GetNewestItemListFromObjectId(objID []primitive.ObjectID) ([]Manga, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Manga, 0)
+
+	filter := bson.M{"_id": bson.M{"$in": objID}}
+	opts := options.Find().SetSort(bson.D{{"updateTime", -1}})
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
+}
+
 func (manga *Manga) GetRandomExcludedItemListFromObjectId(objID []primitive.ObjectID, count int) ([]Manga, error) {
 	coll, err := database.GetMangaCollection()
 	if err != nil {
@@ -316,6 +340,7 @@ func (manga *Manga) Filter(query string, tags []string, position, count int) ([]
 	}
 
 	filter := bson.M{}
+	tags = utils.RemoveEmptyElementsFromStringArray(tags)
 	if len(tags) != 0 {
 		filter["tags"] = bson.D{{"$all", tags}}
 	}
@@ -323,6 +348,7 @@ func (manga *Manga) Filter(query string, tags []string, position, count int) ([]
 		filter["$or"] = []interface{}{
 			bson.D{{"name", primitive.Regex{Pattern: query, Options: "i"}}},
 			bson.D{{"description", primitive.Regex{Pattern: query, Options: "i"}}},
+			bson.D{{"alternateName", primitive.Regex{Pattern: query, Options: "i"}}},
 		}
 	}
 	opts := options.Find().SetSkip(int64(position)).SetLimit(int64(count)).SetSort(bson.M{"updateTime": -1})
