@@ -1,30 +1,32 @@
 package homecontroller
 
 import (
+	"fmt"
 	"log"
 	"magna/model"
-	"magna/requests"
 	"magna/responses"
 	"magna/services/mangaservice"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func GetListHotItems(c *gin.Context) {
-	var request requests.HotItemsListRequest
-	err := c.BindJSON(&request)
+	countParam := c.Param("count")
+	count, err := strconv.Atoi(countParam)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
 		return
 	}
 
-	hotItemList, err := mangaservice.GetListHotItems(request.Count)
+	hotItemList, err := mangaservice.GetListHotItems(count)
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
 		return
 	}
 
+	fmt.Println(count)
 	var responseList []responses.HotItemsResponse
 	for _, hotItem := range hotItemList {
 		var response responses.HotItemsResponse
@@ -38,15 +40,14 @@ func GetListHotItems(c *gin.Context) {
 }
 
 func GetListRecommendation(c *gin.Context) {
-	var request requests.RecommendListRequest
-	err := c.BindJSON(&request)
+	countParam := c.Param("count")
+	count, err := strconv.Atoi(countParam)
 	if err != nil {
-		log.Println("ERROR:", err.Error(), "home_controller GetListRecommendation")
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
 		return
 	}
 
-	recommendList, err := mangaservice.GetListRecommendation(request.Count)
+	recommendList, err := mangaservice.GetListRecommendation(count)
 	if err != nil {
 		log.Println("ERROR:", err.Error(), "home_controller GetListRecommendation")
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
@@ -66,14 +67,20 @@ func GetListRecommendation(c *gin.Context) {
 }
 
 func GetNewestList(c *gin.Context) {
-	var request requests.NewestListRequest
-	err := c.BindJSON(&request)
+	positionParam := c.Param("position")
+	countParam := c.Param("count")
+	count, err := strconv.Atoi(countParam)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
+		return
+	}
+	position, err := strconv.Atoi(positionParam)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
 		return
 	}
 
-	newestList, totalCount, err := mangaservice.GetNewestList(request.Postition, request.Count)
+	newestList, totalCount, err := mangaservice.GetNewestList(position, count)
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
 		return

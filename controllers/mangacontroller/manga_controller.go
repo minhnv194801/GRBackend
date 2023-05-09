@@ -12,6 +12,7 @@ import (
 	"magna/services/ratingservice"
 	"magna/services/sessionservice"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -72,15 +73,21 @@ func GetMangaChapterList(c *gin.Context) {
 	id := c.Param("mangaid")
 	sessionkey := c.GetHeader("Authorization")
 	userId, _ := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
-	var request requests.MangaChapterListRequest
-	err := c.BindJSON(&request)
+	positionParam := c.Param("position")
+	countParam := c.Param("count")
+	count, err := strconv.Atoi(countParam)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
+		return
+	}
+	position, err := strconv.Atoi(positionParam)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
 		return
 	}
 
 	var responseList []responses.ChapterListResponse
-	chapterList, err := mangaservice.GetMangaChapterList(id, request.Postition, request.Count)
+	chapterList, err := mangaservice.GetMangaChapterList(id, position, count)
 	if err != nil {
 		log.Println(err.Error(), "err.Error() GetMangaInfo controllers/readcontrollers/readcontrollers.go:26")
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -103,14 +110,21 @@ func GetMangaChapterList(c *gin.Context) {
 
 func GetCommentList(c *gin.Context) {
 	id := c.Param("mangaid")
-	var request requests.MangaChapterListRequest
-	err := c.BindJSON(&request)
+	positionParam := c.Param("position")
+	countParam := c.Param("count")
+	count, err := strconv.Atoi(countParam)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad request"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
 		return
 	}
+	position, err := strconv.Atoi(positionParam)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
+		return
+	}
+
 	var responseList responses.CommentListResponse
-	commentList, err := commentservice.GetCommentListFromMangaId(id, request.Postition, request.Count)
+	commentList, err := commentservice.GetCommentListFromMangaId(id, position, count)
 	if err != nil {
 		log.Println(err.Error(), "err.Error() GetCommentList controllers/mangacontrollers/mangacontrollers.go:93")
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})

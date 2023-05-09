@@ -31,16 +31,16 @@ func InitRouter() *gin.Engine {
 
 	apiv1Home := apiv1.Group("/home")
 	{
-		apiv1Home.POST("/new", homecontroller.GetNewestList)
-		apiv1Home.POST("/recommend", homecontroller.GetListRecommendation)
-		apiv1Home.POST("/hot", homecontroller.GetListHotItems)
+		apiv1Home.GET("/new/:position/:count/", homecontroller.GetNewestList)
+		apiv1Home.GET("/recommend/:count/", homecontroller.GetListRecommendation)
+		apiv1Home.GET("/hot/:count/", homecontroller.GetListHotItems)
 	}
 
 	apiv1Manga := apiv1.Group("/manga")
 	{
 		apiv1Manga.GET("/:mangaid", mangacontroller.GetMangaInfo)
-		apiv1Manga.POST("/:mangaid/chapterlist", mangacontroller.GetMangaChapterList)
-		apiv1Manga.POST("/:mangaid/commentlist", mangacontroller.GetCommentList)
+		apiv1Manga.GET("/:mangaid/chapterlist/:position/:count/", mangacontroller.GetMangaChapterList)
+		apiv1Manga.GET("/:mangaid/commentlist/:position/:count/", mangacontroller.GetCommentList)
 		apiv1Manga.POST("/:mangaid/rate", mangacontroller.SetRating)
 	}
 
