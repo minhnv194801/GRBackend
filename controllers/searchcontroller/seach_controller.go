@@ -29,6 +29,16 @@ func Search(c *gin.Context) {
 		result.Id = item.Id.Hex()
 		result.Cover = item.Cover
 		result.Title = item.Name
+		result.Description = item.Description
+		result.Status = int(item.Status)
+		result.Tags = item.Tags
+		var sum float32
+		for _, value := range item.Rated {
+			sum += float32(value)
+		}
+		if len(item.Rated) != 0 {
+			result.Rating = sum / float32(len(item.Rated))
+		}
 		chapterList, _ := new(model.Chapter).GetMangaNewestChapterList(item.Id, 3)
 		for _, chapter := range chapterList {
 			var chapterItem responses.NewestChapter

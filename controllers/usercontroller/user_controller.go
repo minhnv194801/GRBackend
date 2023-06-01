@@ -84,12 +84,16 @@ func GetOwnedChapter(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 		return
 	}
+	var response []responses.OwnedChapterResponse
+	if len(user.OwnedChapters) == 0 {
+		c.IndentedJSON(http.StatusOK, response)
+		return
+	}
 	ownedMangaMap, err := chapterservice.GroupMangaToChapter(user.OwnedChapters)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 		return
 	}
-	var response []responses.OwnedChapterResponse
 	for mangaId, chapterList := range ownedMangaMap {
 		var res responses.OwnedChapterResponse
 		manga, err := mangaservice.GetMangaInfo(mangaId)
@@ -124,13 +128,18 @@ func GetFavoriteMangaList(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 		return
 	}
+
+	var responseList []responses.FavoriteItem
+	if len(user.FollowMangas) == 0 {
+		c.IndentedJSON(http.StatusOK, responseList)
+		return
+	}
 	favoriteList, err := new(model.Manga).GetNewestItemListFromObjectId(user.FollowMangas)
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
 		return
 	}
 
-	var responseList []responses.FavoriteItem
 	for _, item := range favoriteList {
 		var response responses.FavoriteItem
 		response.Id = item.Id.Hex()

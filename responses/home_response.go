@@ -19,9 +19,11 @@ type NewestResponse struct {
 }
 
 type HotItemsResponse struct {
-	Id    string `json:"id"`
-	Title string `json:"title"`
-	Image string `json:"image"`
+	Id          string   `json:"id"`
+	Title       string   `json:"title"`
+	Image       string   `json:"image"`
+	Description string   `json:"description"`
+	Tags        []string `json:"tags"`
 }
 
 type RecommendResponse struct {

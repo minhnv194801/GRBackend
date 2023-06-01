@@ -33,6 +33,8 @@ func GetListHotItems(c *gin.Context) {
 		response.Id = hotItem.Id.Hex()
 		response.Title = hotItem.Name
 		response.Image = hotItem.Cover
+		response.Description = hotItem.Description
+		response.Tags = hotItem.Tags
 		responseList = append(responseList, response)
 	}
 
