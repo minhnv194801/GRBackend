@@ -3,6 +3,8 @@ package model
 import (
 	"context"
 	"magna/database"
+	"magna/utils"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,6 +24,8 @@ type Chapter struct {
 }
 
 func (chapter *Chapter) InsertToDatabase() (primitive.ObjectID, error) {
+	chapter.UpdateTime = uint(time.Now().Unix())
+
 	coll, err := database.GetChapterCollection()
 	if err != nil {
 		return [12]byte{}, err
@@ -40,6 +44,48 @@ func (chapter *Chapter) InsertToDatabase() (primitive.ObjectID, error) {
 
 	chapter.Id = result.InsertedID.(primitive.ObjectID)
 	return result.InsertedID.(primitive.ObjectID), nil
+}
+
+func (chapter *Chapter) GetItemList(position, count int, sortField, sortType string) ([]Chapter, int, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]Chapter, 0)
+	filter := bson.D{{}}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
 }
 
 func (chapter *Chapter) GetItemFromObjectId(objID primitive.ObjectID) error {
@@ -171,26 +217,6 @@ func (chapter *Chapter) IsOwned(ownerId primitive.ObjectID) (bool, error) {
 	return false, nil
 }
 
-func getExistedChapterID(mangaId primitive.ObjectID, name string) (primitive.ObjectID, error) {
-	coll, err := database.GetChapterCollection()
-	if err != nil {
-		return [12]byte{}, err
-	}
-
-	var doc Chapter
-	filter := bson.D{{"manga", mangaId}, {"name", name}}
-	opts := options.FindOne()
-	found := coll.FindOne(context.TODO(), filter, opts)
-	if found.Err() != nil {
-		return [12]byte{}, found.Err()
-	}
-	err = found.Decode(&doc)
-	if err != nil {
-		return [12]byte{}, err
-	}
-	return doc.Id, nil
-}
-
 func (chapter *Chapter) GetItemListFromObjectIdGroupByManga(objID []primitive.ObjectID) ([]Chapter, error) {
 	coll, err := database.GetChapterCollection()
 	if err != nil {
@@ -265,4 +291,121 @@ func (chapter *Chapter) GetItemListFromObjectIdGroupByManga(objID []primitive.Ob
 	}
 
 	return listItem, nil
+}
+
+func (chapter *Chapter) AddReport(reportId primitive.ObjectID) error {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return err
+	}
+
+	chapter.Reports = append(chapter.Reports, reportId)
+	filter := bson.D{{"_id", chapter.Id}}
+	update := bson.D{{"$set", bson.D{{"reports", chapter.Reports}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chapter *Chapter) AddOwnedUsers(userId primitive.ObjectID) error {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return err
+	}
+
+	chapter.OwnedUsers = append(chapter.OwnedUsers, userId)
+	filter := bson.D{{"_id", chapter.Id}}
+	update := bson.D{{"$set", bson.D{{"ownedUsers", chapter.OwnedUsers}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chapter *Chapter) RemoveReport(reportId primitive.ObjectID) error {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return err
+	}
+
+	chapter.Reports = utils.RemoveElementFromObjectIdArray(chapter.Reports, reportId)
+	filter := bson.D{{"_id", chapter.Id}}
+	update := bson.D{{"$set", bson.D{{"reports", chapter.Reports}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chapter *Chapter) RemoveOwnedUsers(userId primitive.ObjectID) error {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return err
+	}
+
+	chapter.OwnedUsers = utils.RemoveElementFromObjectIdArray(chapter.OwnedUsers, userId)
+	filter := bson.D{{"_id", chapter.Id}}
+	update := bson.D{{"$set", bson.D{{"ownedUsers", chapter.OwnedUsers}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chapter *Chapter) DeleteChapterById(id primitive.ObjectID) error {
+	err := chapter.GetItemFromObjectId(id)
+	if err != nil {
+		return err
+	}
+
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", chapter.Id}}
+	_, err = coll.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+
+	for _, userId := range chapter.OwnedUsers {
+		user := new(User)
+		err = user.GetItemFromObjectId(userId)
+		if err == nil {
+			user.RemoveOwnedChapterById(chapter.Id)
+		}
+	}
+
+	for _, reportId := range chapter.Reports {
+		report := new(Report)
+		report.DeleteReportById(reportId)
+	}
+
+	return nil
+}
+
+func getExistedChapterID(mangaId primitive.ObjectID, name string) (primitive.ObjectID, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return [12]byte{}, err
+	}
+
+	var doc Chapter
+	filter := bson.D{{"manga", mangaId}, {"name", name}}
+	opts := options.FindOne()
+	found := coll.FindOne(context.TODO(), filter, opts)
+	if found.Err() != nil {
+		return [12]byte{}, found.Err()
+	}
+	err = found.Decode(&doc)
+	if err != nil {
+		return [12]byte{}, err
+	}
+	return doc.Id, nil
 }

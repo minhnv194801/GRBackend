@@ -56,3 +56,30 @@ func GroupMangaToChapter(chapterId []primitive.ObjectID) (map[string][]model.Cha
 
 	return resMap, nil
 }
+
+func CreateChapter(mangaId string, title string, cover string, price uint, images []string) (string, error) {
+	mangaObjId, err := primitive.ObjectIDFromHex(mangaId)
+	if err != nil {
+		return "", err
+	}
+
+	chapter := new(model.Chapter)
+	chapter.Manga = mangaObjId
+	chapter.Name = title
+	chapter.Cover = cover
+	chapter.Price = price
+	chapter.Images = images
+	id, err := chapter.InsertToDatabase()
+	if err != nil {
+		return "", err
+	}
+
+	manga := new(model.Manga)
+	manga.GetItemFromObjectId(mangaObjId)
+	err = manga.UpdateChapter(chapter)
+	if err != nil {
+		return "", err
+	}
+
+	return id.Hex(), nil
+}

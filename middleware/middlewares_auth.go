@@ -18,22 +18,16 @@ func AuthMiddleware() gin.HandlerFunc {
 		if strings.Contains(c.Request.URL.String(), "/read") {
 			chapterId := c.Param("chapterid")
 
-			var userId string
-			var err error
-			if sessionkey == "" {
+			userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
+			if err != nil {
 				userId = ""
-			} else {
-				userId, err = sessionservice.ExtractUserIdFromSessionKey(sessionkey)
-				if err != nil {
-					c.AbortWithError(http.StatusUnauthorized, errors.New("UnAuthorized"))
-				}
 			}
 			owned, err := chapterservice.CheckIsOwner(chapterId, userId)
 			if err != nil {
 				c.AbortWithError(http.StatusInternalServerError, errors.New("Error in system"))
 			}
 			if !owned {
-				c.AbortWithError(http.StatusUnauthorized, errors.New("UnAuthorized"))
+				c.AbortWithError(http.StatusUnauthorized, errors.New("Not owner"))
 			}
 			log.Println("Owned detected")
 

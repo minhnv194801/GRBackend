@@ -47,9 +47,7 @@ func Register(email, password, rePassword string) (sskey string, refreshkey stri
 		return "", "", "", "", "", errors.New("Mật khẩu nhập lại khác với mật khẩu")
 	}
 	user := new(model.User)
-	user.Email = email
-	user.Password, _ = utils.Hash(password)
-	_, err = user.CreateNewUser()
+	_, err = user.CreateNewUser(email, password, "Người dùng")
 	if err != nil {
 		log.Println(err.Error(), "err.Error() services/userservice/user_service.go:38")
 		return "", "", "", "", "", err

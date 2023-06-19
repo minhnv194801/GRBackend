@@ -6,6 +6,7 @@ import (
 	"magna/database"
 	"magna/utils"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,7 +14,7 @@ import (
 )
 
 type Manga struct {
-	Id            primitive.ObjectID         `bson:"_id,omitempty"`
+	Id            primitive.ObjectID         `bson:"_id,omitempty" json:"id"`
 	Name          string                     `bson:"name"`
 	AlternateName []string                   `bson:"alternateName"`
 	Author        []string                   `bson:"author"`
@@ -37,6 +38,8 @@ const (
 )
 
 func (manga *Manga) InsertToDatabase() (primitive.ObjectID, error) {
+	manga.UpdateTime = uint(time.Now().Unix())
+
 	coll, err := database.GetMangaCollection()
 	if err != nil {
 		return [12]byte{}, err
@@ -57,6 +60,48 @@ func (manga *Manga) InsertToDatabase() (primitive.ObjectID, error) {
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
+func (manga *Manga) GetItemList(position, count int, sortField, sortType string) ([]Manga, int, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]Manga, 0)
+	filter := bson.D{{}}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
 func (manga *Manga) UpdateChapter(chapter *Chapter) error {
 	coll, err := database.GetMangaCollection()
 	if err != nil {
@@ -69,6 +114,22 @@ func (manga *Manga) UpdateChapter(chapter *Chapter) error {
 	}
 	filter := bson.D{{"_id", manga.Id}}
 	update := bson.D{{"$set", bson.D{{"chapters", manga.Chapters}, {"updateTime", manga.UpdateTime}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (manga *Manga) AddComment(commentId primitive.ObjectID) error {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+
+	manga.Comments = append(manga.Comments, commentId)
+	filter := bson.D{{"_id", manga.Id}}
+	update := bson.D{{"$set", bson.D{{"comments", manga.Comments}}}}
 	_, err = coll.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return err
@@ -389,6 +450,93 @@ func (manga *Manga) IsFavorited(userId primitive.ObjectID) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (manga *Manga) RemoveChapter(chapterId primitive.ObjectID) error {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+
+	manga.Chapters = utils.RemoveElementFromObjectIdArray(manga.Chapters, chapterId)
+	filter := bson.D{{"_id", manga.Id}}
+	update := bson.D{{"$set", bson.D{{"chapters", manga.Chapters}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (manga *Manga) RemoveComment(commentId primitive.ObjectID) error {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+
+	manga.Comments = utils.RemoveElementFromObjectIdArray(manga.Comments, commentId)
+	filter := bson.D{{"_id", manga.Id}}
+	update := bson.D{{"$set", bson.D{{"comments", manga.Comments}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (manga *Manga) RemoveFollowUser(userId primitive.ObjectID) error {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+
+	manga.FollowedUsers = utils.RemoveElementFromObjectIdArray(manga.FollowedUsers, userId)
+	filter := bson.D{{"_id", manga.Id}}
+	update := bson.D{{"$set", bson.D{{"followedUsers", manga.FollowedUsers}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (manga *Manga) DeleteMangaById(id primitive.ObjectID) error {
+	err := manga.GetItemFromObjectId(id)
+	if err != nil {
+		return err
+	}
+
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", manga.Id}}
+	_, err = coll.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+
+	for _, userId := range manga.FollowedUsers {
+		user := new(User)
+		err = user.GetItemFromObjectId(userId)
+		if err == nil {
+			user.RemoveFollowedMangaById(manga.Id)
+			user.RemoveRateManga(manga.Id)
+		}
+	}
+
+	for _, chapterId := range manga.Chapters {
+		chapter := new(Chapter)
+		chapter.DeleteChapterById(chapterId)
+	}
+
+	for _, commentId := range manga.Comments {
+		comment := new(Comment)
+		comment.DeleteCommentById(commentId)
+	}
+
+	return nil
 }
 
 func getExistedTitleID(name string) (primitive.ObjectID, error) {

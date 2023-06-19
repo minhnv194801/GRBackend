@@ -3,8 +3,8 @@ package model
 import (
 	"context"
 	"errors"
-	"fmt"
 	"magna/database"
+	"magna/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -50,7 +50,7 @@ func (user *User) UpdateInfo() error {
 	}
 
 	filter := bson.D{{"_id", user.Id}}
-	fmt.Println("Hello", user.Gender)
+	// fmt.Println("Hello", user.Gender)
 	update := bson.D{{"$set", bson.D{
 		{"displayName", user.DisplayName},
 		{"avatar", user.Avatar},
@@ -85,6 +85,48 @@ func (user *User) GetItemFromObjectId(objID primitive.ObjectID) error {
 	return nil
 }
 
+func (user *User) GetItemList(position, count int, sortField, sortType string) ([]User, int, error) {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]User, 0)
+	filter := bson.D{{}}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
 func (user *User) GetItemFromEmail(email string) error {
 	coll, err := database.GetUserCollection()
 	if err != nil {
@@ -105,8 +147,8 @@ func (user *User) GetItemFromEmail(email string) error {
 	return nil
 }
 
-func (user *User) CreateNewUser() (primitive.ObjectID, error) {
-	existed, err := checkExistedEmail(user.Email)
+func (user *User) CreateNewUser(email, password, role string) (primitive.ObjectID, error) {
+	existed, err := checkExistedEmail(email)
 	if err != nil {
 		return [12]byte{}, err
 	}
@@ -114,9 +156,11 @@ func (user *User) CreateNewUser() (primitive.ObjectID, error) {
 		return [12]byte{}, errors.New("Email đã tồn tại")
 	}
 
-	user.Role = "Người dùng"
+	user.Email = email
+	user.Password, _ = utils.Hash(password)
+	user.Role = role
 	user.Avatar = "https://st3.depositphotos.com/1767687/16607/v/450/depositphotos_166074422-stock-illustration-default-avatar-profile-icon-grey.jpg"
-	user.DisplayName = user.Email
+	user.DisplayName = email
 	user.FirstName = "Tên"
 	user.LastName = "Họ"
 	user.Gender = 0
@@ -136,12 +180,166 @@ func (user *User) CreateNewUser() (primitive.ObjectID, error) {
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
+func (user *User) AddComment(commentId primitive.ObjectID) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	user.Comments = append(user.Comments, commentId)
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"comments", user.Comments}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (user *User) AddReport(reportId primitive.ObjectID) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	user.Reports = append(user.Reports, reportId)
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"reports", user.Reports}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (user *User) DeleteUserById(id primitive.ObjectID) error {
+	err := user.GetItemFromObjectId(id)
+	if err != nil {
+		return err
+	}
+
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", user.Id}}
+	_, err = coll.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	for _, mangaId := range user.FollowMangas {
+		manga := new(Manga)
+		err = manga.GetItemFromObjectId(mangaId)
+		// If successful get manga then remove folllowuser from manga
+		if err == nil {
+			manga.RemoveFollowUser(user.Id)
+		}
+	}
+	for _, chapterId := range user.OwnedChapters {
+		chapter := new(Chapter)
+		err = chapter.GetItemFromObjectId(chapterId)
+		// If successful get chapter then remove ownedUser from chapter
+		if err == nil {
+			chapter.RemoveOwnedUsers(user.Id)
+		}
+	}
+	for _, commentId := range user.Comments {
+		new(Comment).DeleteCommentById(commentId)
+	}
+	for _, reportId := range user.Reports {
+		new(Report).DeleteReportById(reportId)
+	}
+
+	return nil
+}
+
+func (user *User) RemoveReport(reportId primitive.ObjectID) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	user.Reports = utils.RemoveElementFromObjectIdArray(user.Reports, reportId)
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"reports", user.Reports}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (user *User) RemoveComment(commentId primitive.ObjectID) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	user.Comments = utils.RemoveElementFromObjectIdArray(user.Comments, commentId)
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"comments", user.Comments}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (user *User) RemoveFollowedMangaById(mangaId primitive.ObjectID) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	user.FollowMangas = utils.RemoveElementFromObjectIdArray(user.FollowMangas, mangaId)
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"followMangas", user.FollowMangas}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (user *User) RemoveOwnedChapterById(chapterId primitive.ObjectID) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	user.OwnedChapters = utils.RemoveElementFromObjectIdArray(user.OwnedChapters, chapterId)
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"ownedChapters", user.OwnedChapters}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (user *User) SetRate() error {
 	coll, err := database.GetUserCollection()
 	if err != nil {
 		return err
 	}
 
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"rate", user.Rate}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (user *User) RemoveRateManga(mangaId primitive.ObjectID) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	delete(user.Rate, mangaId)
 	filter := bson.D{{"_id", user.Id}}
 	update := bson.D{{"$set", bson.D{{"rate", user.Rate}}}}
 	_, err = coll.UpdateOne(context.TODO(), filter, update)

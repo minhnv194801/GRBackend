@@ -56,7 +56,10 @@ func RefreshSession(key string) (sessionkey string, refreshkey string, userId st
 	if err != nil {
 		return "", "", "", "", "", err
 	}
-	user.GetItemFromObjectId(objId)
+	err = user.GetItemFromObjectId(objId)
+	if err != nil {
+		return "", "", "", "", "", err
+	}
 	username = user.DisplayName
 	avatar = user.Avatar
 

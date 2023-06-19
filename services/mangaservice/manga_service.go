@@ -89,6 +89,9 @@ func GetMangaChapterList(mangaId string, position, count int) ([]model.Chapter, 
 		return nil, err
 	}
 
+	if len(manga.Chapters) == 0 {
+		return nil, nil
+	}
 	if position >= len(manga.Chapters) {
 		return nil, errors.New("Invalid position")
 	}
@@ -106,10 +109,6 @@ func GetMangaChapterList(mangaId string, position, count int) ([]model.Chapter, 
 		}
 		return chapterList, nil
 	}
-}
-
-func GetUserFavoriteList(userId string) ([]model.Manga, error) {
-	return nil, nil
 }
 
 func SetUserFavorite(userId, mangaId string) error {
@@ -169,4 +168,23 @@ func GetTotalCount() (int, error) {
 
 func ClearHotMangaMap() {
 	hotMangaMap = make(map[primitive.ObjectID]int)
+}
+
+func CreateManga(name string, alternateNames []string, author string, cover string, description string, isRecommend bool, tags []string) (string, error) {
+	manga := new(model.Manga)
+	manga.Name = name
+	manga.AlternateName = alternateNames
+	authors := make([]string, 1)
+	authors[0] = author
+	manga.Author = authors
+	manga.Cover = cover
+	manga.Description = description
+	manga.IsRecommended = isRecommend
+	manga.Tags = tags
+	id, err := manga.InsertToDatabase()
+	if err != nil {
+		return "", err
+	}
+
+	return id.Hex(), nil
 }
