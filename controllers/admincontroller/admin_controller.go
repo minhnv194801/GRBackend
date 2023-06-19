@@ -92,7 +92,10 @@ func CreateNewUser(c *gin.Context) {
 		if err.Error() == "Password không hợp lệ" {
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"errors": gin.H{"Password": err.Error()}})
 		}
-		return
+		if err.Error() == "Email không hợp lệ" {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"errors": gin.H{"Password": err.Error()}})
+		}
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
