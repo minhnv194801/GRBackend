@@ -581,6 +581,21 @@ func (user *User) IsAdmin() (bool, error) {
 	return user.Role == "Quản trị viên", nil
 }
 
+func (user *User) Update(fieldName, fieldValue string) error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{fieldName, fieldValue}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func checkExistedEmail(email string) (bool, error) {
 	coll, err := database.GetUserCollection()
 	if err != nil {

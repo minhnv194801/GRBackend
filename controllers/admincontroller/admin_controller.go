@@ -147,6 +147,19 @@ func DeleteUser(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
 }
 
+func UpdateUser(c *gin.Context) {
+	id := c.Param("id")
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	user := new(model.User)
+	user.Id = objId
+
+	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
+}
+
 func CreateNewUser(c *gin.Context) {
 	req := requests.AdminCreateAccountRequest{}
 	err := c.ShouldBindJSON(&req)
