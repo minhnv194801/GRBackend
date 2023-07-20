@@ -127,6 +127,184 @@ func (user *User) GetItemList(position, count int, sortField, sortType string) (
 	}
 }
 
+func (user *User) GetItemListFilterByDisplayName(position, count int, sortField, sortType, filterValue string) ([]User, int, error) {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]User, 0)
+	filter := bson.D{{"displayName", primitive.Regex{Pattern: filterValue, Options: "i"}}}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
+func (user *User) GetItemListFilterByEmail(position, count int, sortField, sortType, filterValue string) ([]User, int, error) {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]User, 0)
+	filter := bson.D{{"email", primitive.Regex{Pattern: filterValue, Options: "i"}}}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
+func (user *User) GetItemListFilterByFollowManga(position, count int, sortField, sortType, filterValue string) ([]User, int, error) {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filterValueObjId, err := primitive.ObjectIDFromHex(filterValue)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]User, 0)
+	filter := bson.M{"followMangas": filterValueObjId}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
+func (user *User) GetItemListFilterByOwnedChapters(position, count int, sortField, sortType, filterValue string) ([]User, int, error) {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filterValueObjId, err := primitive.ObjectIDFromHex(filterValue)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]User, 0)
+	filter := bson.M{"ownedChapters": filterValueObjId}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
 func (user *User) GetItemFromEmail(email string) error {
 	coll, err := database.GetUserCollection()
 	if err != nil {

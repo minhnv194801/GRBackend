@@ -88,6 +88,142 @@ func (chapter *Chapter) GetItemList(position, count int, sortField, sortType str
 	}
 }
 
+func (chapter *Chapter) GetItemListFilterByName(position, count int, sortField, sortType, filterValue string) ([]Chapter, int, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]Chapter, 0)
+	filter := bson.D{{"name", primitive.Regex{Pattern: filterValue, Options: "i"}}}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
+func (chapter *Chapter) GetItemListFilterByManga(position, count int, sortField, sortType, filterValue string) ([]Chapter, int, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filterValueObjId, err := primitive.ObjectIDFromHex(filterValue)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]Chapter, 0)
+	filter := bson.M{"manga": filterValueObjId}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
+func (chapter *Chapter) GetItemListFilterByOwnedUser(position, count int, sortField, sortType, filterValue string) ([]Chapter, int, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filterValueObjId, err := primitive.ObjectIDFromHex(filterValue)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]Chapter, 0)
+	filter := bson.M{"ownedUsers": filterValueObjId}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
 func (chapter *Chapter) GetItemFromObjectId(objID primitive.ObjectID) error {
 	coll, err := database.GetChapterCollection()
 	if err != nil {

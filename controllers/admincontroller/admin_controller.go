@@ -4,6 +4,7 @@ import (
 	"log"
 	"magna/model"
 	"magna/requests"
+	"magna/responses"
 	"magna/services/chapterservice"
 	"magna/services/mangaservice"
 	"magna/services/userservice"
@@ -46,10 +47,41 @@ func GetUserList(c *gin.Context) {
 	var totalCount int
 	var err error
 
-	userList, totalCount, err = new(model.User).GetItemList(pos, count, sortField, sortType)
-	if err != nil {
-		log.Println(err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	switch filterField {
+	case "displayName":
+		userList, totalCount, err = new(model.User).GetItemListFilterByDisplayName(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	case "email":
+		userList, totalCount, err = new(model.User).GetItemListFilterByEmail(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	case "followMangas":
+		userList, totalCount, err = new(model.User).GetItemListFilterByFollowManga(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	case "ownedChapters":
+		userList, totalCount, err = new(model.User).GetItemListFilterByOwnedChapters(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	default:
+		userList, totalCount, err = new(model.User).GetItemList(pos, count, sortField, sortType)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
 	}
 
 	endIndex := pos + len(userList) - 1
@@ -74,6 +106,28 @@ func GetUser(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, user)
+}
+
+func GetUserReference(c *gin.Context) {
+	id := c.Param("id")
+
+	user := new(model.User)
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	err = user.GetItemFromObjectId(objId)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+
+	var response responses.UserReferenceItem
+	response.Avatar = user.Avatar
+	response.DisplayName = user.DisplayName
+
+	c.IndentedJSON(http.StatusOK, response)
 }
 
 func DeleteUser(c *gin.Context) {
@@ -199,6 +253,27 @@ func GetManga(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, manga)
 }
 
+func GetMangaReference(c *gin.Context) {
+	id := c.Param("id")
+
+	manga := new(model.Manga)
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	err = manga.GetItemFromObjectId(objId)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	var response responses.MangaReferenceItem
+	response.Cover = manga.Cover
+	response.Title = manga.Name
+
+	c.IndentedJSON(http.StatusOK, response)
+}
+
 func DeleteManga(c *gin.Context) {
 	id := c.Param("id")
 	objId, err := primitive.ObjectIDFromHex(id)
@@ -248,12 +323,51 @@ func GetChapterList(c *gin.Context) {
 	sortType := strings.Split(listSort, ",")[1]
 	sortType = strings.Trim(sortType, "\"")
 
-	chapterList, totalCount, err := new(model.Chapter).GetItemList(pos, count, sortField, sortType)
-	if err != nil {
-		log.Println(err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	filter := c.Request.URL.Query().Get("filter")
+	filter = strings.Trim(filter, "[")
+	filter = strings.Trim(filter, "]")
+	var filterField string
+	var filterValue string
+	if len(strings.Split(filter, ",")) >= 2 {
+		filterField = strings.Split(filter, ",")[0]
+		filterField = strings.Trim(filterField, "\"")
+		filterValue = strings.Split(filter, ",")[1]
+		filterValue = strings.Trim(filterValue, "\"")
 	}
 
+	var chapterList []model.Chapter
+	var totalCount int
+	var err error
+
+	switch filterField {
+	case "name":
+		chapterList, totalCount, err = new(model.Chapter).GetItemListFilterByName(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	case "manga":
+		chapterList, totalCount, err = new(model.Chapter).GetItemListFilterByManga(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	case "ownedUsers":
+		chapterList, totalCount, err = new(model.Chapter).GetItemListFilterByOwnedUser(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	default:
+		chapterList, totalCount, err = new(model.Chapter).GetItemList(pos, count, sortField, sortType)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+	}
 	endIndex := pos + len(chapterList) - 1
 	c.Header("Content-Range", strconv.Itoa(pos)+"-"+strconv.Itoa(endIndex)+"/"+strconv.Itoa(totalCount))
 
@@ -276,6 +390,28 @@ func GetChapter(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, chapter)
+}
+
+func GetChapterReference(c *gin.Context) {
+	id := c.Param("id")
+
+	chapter := new(model.Chapter)
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	err = chapter.GetItemFromObjectId(objId)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+
+	var response responses.ChapterReferenceItem
+	response.Cover = chapter.Cover
+	response.Title = chapter.Name
+
+	c.IndentedJSON(http.StatusOK, response)
 }
 
 func DeleteChapter(c *gin.Context) {
@@ -327,10 +463,43 @@ func GetCommentList(c *gin.Context) {
 	sortType := strings.Split(listSort, ",")[1]
 	sortType = strings.Trim(sortType, "\"")
 
-	commentList, totalCount, err := new(model.Comment).GetItemList(pos, count, sortField, sortType)
-	if err != nil {
-		log.Println(err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	filter := c.Request.URL.Query().Get("filter")
+	filter = strings.Trim(filter, "[")
+	filter = strings.Trim(filter, "]")
+	var filterField string
+	var filterValue string
+	if len(strings.Split(filter, ",")) >= 2 {
+		filterField = strings.Split(filter, ",")[0]
+		filterField = strings.Trim(filterField, "\"")
+		filterValue = strings.Split(filter, ",")[1]
+		filterValue = strings.Trim(filterValue, "\"")
+	}
+
+	var commentList []model.Comment
+	var totalCount int
+	var err error
+
+	switch filterField {
+	case "user":
+		commentList, totalCount, err = new(model.Comment).GetItemListFilterByUser(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	case "manga":
+		commentList, totalCount, err = new(model.Comment).GetItemListFilterByManga(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	default:
+		commentList, totalCount, err = new(model.Comment).GetItemList(pos, count, sortField, sortType)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
 	}
 
 	endIndex := pos + len(commentList) - 1
@@ -355,6 +524,46 @@ func GetComment(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, comment)
+}
+
+func GetCommentReference(c *gin.Context) {
+	id := c.Param("id")
+
+	comment := new(model.Comment)
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	err = comment.GetItemFromObjectId(objId)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+
+	var response responses.CommentReferenceItem
+	response.Content = comment.Content
+	response.TimeCreated = comment.TimeCreated
+
+	manga := new(model.Manga)
+	user := new(model.User)
+	err = manga.GetItemFromObjectId(comment.Manga)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	err = user.GetItemFromObjectId(comment.User)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+
+	response.Manga.Cover = manga.Cover
+	response.Manga.Title = manga.Name
+	response.User.Avatar = user.Avatar
+	response.User.DisplayName = user.DisplayName
+
+	c.IndentedJSON(http.StatusOK, response)
 }
 
 func DeleteComment(c *gin.Context) {
@@ -389,10 +598,43 @@ func GetReportList(c *gin.Context) {
 	sortType := strings.Split(listSort, ",")[1]
 	sortType = strings.Trim(sortType, "\"")
 
-	reportList, totalCount, err := new(model.Report).GetItemList(pos, count, sortField, sortType)
-	if err != nil {
-		log.Println(err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	filter := c.Request.URL.Query().Get("filter")
+	filter = strings.Trim(filter, "[")
+	filter = strings.Trim(filter, "]")
+	var filterField string
+	var filterValue string
+	if len(strings.Split(filter, ",")) >= 2 {
+		filterField = strings.Split(filter, ",")[0]
+		filterField = strings.Trim(filterField, "\"")
+		filterValue = strings.Split(filter, ",")[1]
+		filterValue = strings.Trim(filterValue, "\"")
+	}
+
+	var reportList []model.Report
+	var totalCount int
+	var err error
+
+	switch filterField {
+	case "user":
+		reportList, totalCount, err = new(model.Report).GetItemListFilterByUser(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	case "chapter":
+		reportList, totalCount, err = new(model.Report).GetItemListFilterByChapter(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	default:
+		reportList, totalCount, err = new(model.Report).GetItemList(pos, count, sortField, sortType)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
 	}
 
 	endIndex := pos + len(reportList) - 1
@@ -417,6 +659,47 @@ func GetReport(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, report)
+}
+
+func GetReportReference(c *gin.Context) {
+	id := c.Param("id")
+
+	report := new(model.Report)
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	err = report.GetItemFromObjectId(objId)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+
+	var response responses.ReportReferenceItem
+	response.Content = report.Content
+	response.TimeCreated = report.TimeCreated
+	response.Status = report.Status
+
+	chapter := new(model.Chapter)
+	user := new(model.User)
+	err = chapter.GetItemFromObjectId(report.Chapter)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	err = user.GetItemFromObjectId(report.User)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+
+	response.Chapter.Cover = chapter.Cover
+	response.Chapter.Title = chapter.Name
+	response.User.Avatar = user.Avatar
+	response.User.DisplayName = user.DisplayName
+
+	c.IndentedJSON(http.StatusOK, response)
 }
 
 func DeleteReport(c *gin.Context) {
