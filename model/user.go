@@ -572,6 +572,15 @@ func (user *User) GetTotalCount() (int, error) {
 	return int(count), nil
 }
 
+func (user *User) IsAdmin() (bool, error) {
+	err := user.GetItemFromObjectId(user.Id)
+	if err != nil {
+		return false, err
+	}
+
+	return user.Role == "Quản trị viên", nil
+}
+
 func checkExistedEmail(email string) (bool, error) {
 	coll, err := database.GetUserCollection()
 	if err != nil {

@@ -6,6 +6,8 @@ import (
 	"magna/model"
 	"magna/services/sessionservice"
 	"magna/utils"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Login(email, password string) (sskey string, refreshkey string, id string, username, avatar string, err error) {
@@ -62,4 +64,14 @@ func Register(email, password, rePassword string) (sskey string, refreshkey stri
 	}
 
 	return sskey, refreshkey, id, username, avatar, nil
+}
+
+func CheckAdmin(userId string) (bool, error) {
+	objId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return false, err
+	}
+	user := new(model.User)
+	user.Id = objId
+	return user.IsAdmin()
 }
