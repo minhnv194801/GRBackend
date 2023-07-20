@@ -83,3 +83,7 @@ func CreateChapter(mangaId string, title string, cover string, price uint, image
 
 	return id.Hex(), nil
 }
+
+func GetTotalCount() (int, error) {
+	return new(model.Chapter).GetTotalCount()
+}

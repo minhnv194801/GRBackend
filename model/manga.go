@@ -15,19 +15,19 @@ import (
 
 type Manga struct {
 	Id            primitive.ObjectID         `bson:"_id,omitempty" json:"id"`
-	Name          string                     `bson:"name"`
-	AlternateName []string                   `bson:"alternateName"`
-	Author        []string                   `bson:"author"`
-	Cover         string                     `bson:"cover"`
-	Description   string                     `bson:"description"`
-	Status        Status                     `bson:"status"`
-	UpdateTime    uint                       `bson:"updateTime"`
-	IsRecommended bool                       `bson:"isRecommended"`
-	Tags          []string                   `bson:"tags"`
-	FollowedUsers []primitive.ObjectID       `bson:"followedUsers"`
-	Chapters      []primitive.ObjectID       `bson:"chapters"`
-	Comments      []primitive.ObjectID       `bson:"comments"`
-	Rated         map[primitive.ObjectID]int `bson:"rated"`
+	Name          string                     `bson:"name" json:"name"`
+	AlternateName []string                   `bson:"alternateName" json:"alternateNames"`
+	Author        []string                   `bson:"author" json:"author"`
+	Cover         string                     `bson:"cover" json:"cover"`
+	Description   string                     `bson:"description" json:"description"`
+	Status        Status                     `bson:"status" json:"status"`
+	UpdateTime    uint                       `bson:"updateTime" json:"updateTime"`
+	IsRecommended bool                       `bson:"isRecommended" json:"isRecommended"`
+	Tags          []string                   `bson:"tags" json:"tags"`
+	FollowedUsers []primitive.ObjectID       `bson:"followedUsers" json:"followedUsers"`
+	Chapters      []primitive.ObjectID       `bson:"chapters" json:"chapters"`
+	Comments      []primitive.ObjectID       `bson:"comments" json:"comments"`
+	Rated         map[primitive.ObjectID]int `bson:"rated" json:"rated"`
 }
 
 type Status int
@@ -68,6 +68,95 @@ func (manga *Manga) GetItemList(position, count int, sortField, sortType string)
 
 	listItem := make([]Manga, 0)
 	filter := bson.D{{}}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
+func (manga *Manga) GetItemListFilterByName(position, count int, sortField, sortType, filterValue string) ([]Manga, int, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]Manga, 0)
+	filter := bson.D{{"name", primitive.Regex{Pattern: filterValue, Options: "i"}}}
+	opts := options.Find()
+	opts.SetSkip(int64(position))
+	if sortField == "id" {
+		sortField = "_id"
+	}
+	if sortType == "ASC" {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): 1})
+	} else {
+		opts.SetSort(bson.M{utils.FirstLetterToLower(sortField): -1})
+	}
+	opts.SetLimit(int64(count))
+
+	cursor, err := coll.Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if count < len(listItem) {
+		return listItem[:count], int(totalCount), nil
+	} else {
+		return listItem[:], int(totalCount), nil
+	}
+}
+
+func (manga *Manga) GetItemListFilterByFollowedUsers(position, count int, sortField, sortType, filterValue string) ([]Manga, int, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filterValueObjId, err := primitive.ObjectIDFromHex(filterValue)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	listItem := make([]Manga, 0)
+	filter := bson.M{"followedUsers": filterValueObjId}
 	opts := options.Find()
 	opts.SetSkip(int64(position))
 	if sortField == "id" {

@@ -189,3 +189,23 @@ func SetRating(c *gin.Context) {
 	}
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Success"})
 }
+
+func GetMangaTotalCount(c *gin.Context) {
+	totalCount, err := mangaservice.GetTotalCount()
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, totalCount)
+}
+
+func GetChapterTotalCount(c *gin.Context) {
+	totalCount, err := chapterservice.GetTotalCount()
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, totalCount)
+}

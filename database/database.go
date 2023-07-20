@@ -20,7 +20,7 @@ func GetMongoDB() (*mongo.Database, error) {
 			return
 		}
 
-		mongoDB = mongoClient.Database("Magna")
+		mongoDB = mongoClient.Database("Magna-test")
 	})
 
 	return mongoDB, nil

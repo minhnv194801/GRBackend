@@ -30,13 +30,30 @@ func GetUserList(c *gin.Context) {
 	sortType := strings.Split(listSort, ",")[1]
 	sortType = strings.Trim(sortType, "\"")
 
-	userList, totalCount, err := new(model.User).GetItemList(pos, count, sortField, sortType)
+	filter := c.Request.URL.Query().Get("filter")
+	filter = strings.Trim(filter, "[")
+	filter = strings.Trim(filter, "]")
+	var filterField string
+	var filterValue string
+	if len(strings.Split(filter, ",")) >= 2 {
+		filterField = strings.Split(filter, ",")[0]
+		filterField = strings.Trim(filterField, "\"")
+		filterValue = strings.Split(filter, ",")[1]
+		filterValue = strings.Trim(filterValue, "\"")
+	}
+
+	var userList []model.User
+	var totalCount int
+	var err error
+
+	userList, totalCount, err = new(model.User).GetItemList(pos, count, sortField, sortType)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 	}
 
-	c.Header("Content-Range", "users "+strconv.Itoa(pos)+"-"+strconv.Itoa(count)+"/"+strconv.Itoa(totalCount))
+	endIndex := pos + len(userList) - 1
+	c.Header("Content-Range", strconv.Itoa(pos)+"-"+strconv.Itoa(endIndex)+"/"+strconv.Itoa(totalCount))
 
 	c.IndentedJSON(http.StatusOK, userList)
 }
@@ -120,13 +137,46 @@ func GetMangaList(c *gin.Context) {
 	sortType := strings.Split(listSort, ",")[1]
 	sortType = strings.Trim(sortType, "\"")
 
-	mangaList, totalCount, err := new(model.Manga).GetItemList(pos, count, sortField, sortType)
-	if err != nil {
-		log.Println(err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	filter := c.Request.URL.Query().Get("filter")
+	filter = strings.Trim(filter, "[")
+	filter = strings.Trim(filter, "]")
+	var filterField string
+	var filterValue string
+	if len(strings.Split(filter, ",")) >= 2 {
+		filterField = strings.Split(filter, ",")[0]
+		filterField = strings.Trim(filterField, "\"")
+		filterValue = strings.Split(filter, ",")[1]
+		filterValue = strings.Trim(filterValue, "\"")
 	}
 
-	c.Header("Content-Range", "mangas "+strconv.Itoa(pos)+"-"+strconv.Itoa(count)+"/"+strconv.Itoa(totalCount))
+	var mangaList []model.Manga
+	var totalCount int
+	var err error
+	switch filterField {
+	case "name":
+		mangaList, totalCount, err = new(model.Manga).GetItemListFilterByName(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	case "followedUsers":
+		mangaList, totalCount, err = new(model.Manga).GetItemListFilterByFollowedUsers(pos, count, sortField, sortType, filterValue)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+		break
+	default:
+		mangaList, totalCount, err = new(model.Manga).GetItemList(pos, count, sortField, sortType)
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		}
+	}
+
+	endIndex := pos + len(mangaList) - 1
+	c.Header("Content-Range", strconv.Itoa(pos)+"-"+strconv.Itoa(endIndex)+"/"+strconv.Itoa(totalCount))
 
 	c.IndentedJSON(http.StatusOK, mangaList)
 }
@@ -204,7 +254,8 @@ func GetChapterList(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 	}
 
-	c.Header("Content-Range", "chapters "+strconv.Itoa(pos)+"-"+strconv.Itoa(count)+"/"+strconv.Itoa(totalCount))
+	endIndex := pos + len(chapterList) - 1
+	c.Header("Content-Range", strconv.Itoa(pos)+"-"+strconv.Itoa(endIndex)+"/"+strconv.Itoa(totalCount))
 
 	c.IndentedJSON(http.StatusOK, chapterList)
 }
@@ -282,7 +333,8 @@ func GetCommentList(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 	}
 
-	c.Header("Content-Range", "comments "+strconv.Itoa(pos)+"-"+strconv.Itoa(count)+"/"+strconv.Itoa(totalCount))
+	endIndex := pos + len(commentList) - 1
+	c.Header("Content-Range", strconv.Itoa(pos)+"-"+strconv.Itoa(endIndex)+"/"+strconv.Itoa(totalCount))
 
 	c.IndentedJSON(http.StatusOK, commentList)
 }
@@ -343,7 +395,8 @@ func GetReportList(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
 	}
 
-	c.Header("Content-Range", "reports "+strconv.Itoa(pos)+"-"+strconv.Itoa(count)+"/"+strconv.Itoa(totalCount))
+	endIndex := pos + len(reportList) - 1
+	c.Header("Content-Range", strconv.Itoa(pos)+"-"+strconv.Itoa(endIndex)+"/"+strconv.Itoa(totalCount))
 
 	c.IndentedJSON(http.StatusOK, reportList)
 }

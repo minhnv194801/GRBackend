@@ -13,14 +13,14 @@ import (
 
 type Chapter struct {
 	Id         primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
-	Manga      primitive.ObjectID   `bson:"manga"`
+	Manga      primitive.ObjectID   `bson:"manga" json:"manga"`
 	Name       string               `bson:"name" json:"title"`
-	Cover      string               `bson:"cover"`
-	Price      uint                 `bson:"price"`
-	UpdateTime uint                 `bson:"updateTime"`
-	Images     []string             `bson:"images"`
-	OwnedUsers []primitive.ObjectID `bson:"ownedUsers"`
-	Reports    []primitive.ObjectID `bson:"reports"`
+	Cover      string               `bson:"cover" json:"cover"`
+	Price      uint                 `bson:"price" json:"price"`
+	UpdateTime uint                 `bson:"updateTime" json:"updateTime"`
+	Images     []string             `bson:"images" json:"images"`
+	OwnedUsers []primitive.ObjectID `bson:"ownedUsers" json:"ownedUsers"`
+	Reports    []primitive.ObjectID `bson:"reports" json:"reports"`
 }
 
 func (chapter *Chapter) InsertToDatabase() (primitive.ObjectID, error) {
@@ -388,6 +388,21 @@ func (chapter *Chapter) DeleteChapterById(id primitive.ObjectID) error {
 	}
 
 	return nil
+}
+
+func (chapter *Chapter) GetTotalCount() (int, error) {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return 0, err
+	}
+
+	filter := bson.D{{}}
+	count, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
 }
 
 func getExistedChapterID(mangaId primitive.ObjectID, name string) (primitive.ObjectID, error) {

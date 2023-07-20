@@ -188,3 +188,13 @@ func GetUserReport(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, responseList)
 }
+
+func GetTotalCount(c *gin.Context) {
+	totalCount, err := userservice.GetTotalCount()
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, totalCount)
+}

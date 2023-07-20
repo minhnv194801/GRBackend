@@ -13,10 +13,10 @@ import (
 
 type Comment struct {
 	Id          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Manga       primitive.ObjectID `bson:"manga"`
-	User        primitive.ObjectID `bson:"user"`
-	Content     string             `bson:"content"`
-	TimeCreated uint               `bson:"timeCreated"`
+	Manga       primitive.ObjectID `bson:"manga" json:"manga"`
+	User        primitive.ObjectID `bson:"user" json:"user"`
+	Content     string             `bson:"content" json:"content"`
+	TimeCreated uint               `bson:"timeCreated" json:"timeCreated"`
 }
 
 func (comment *Comment) InsertToDatabase() (primitive.ObjectID, error) {
@@ -203,4 +203,19 @@ func (comment *Comment) DeleteCommentById(id primitive.ObjectID) error {
 	}
 
 	return nil
+}
+
+func (comment *Comment) GetTotalCount() (int, error) {
+	coll, err := database.GetCommentCollection()
+	if err != nil {
+		return 0, err
+	}
+
+	filter := bson.D{{}}
+	count, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
 }

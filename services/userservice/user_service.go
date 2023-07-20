@@ -41,3 +41,7 @@ func CreateAccount(email, password, role string) (string, error) {
 
 	return id, nil
 }
+
+func GetTotalCount() (int, error) {
+	return new(model.User).GetTotalCount()
+}

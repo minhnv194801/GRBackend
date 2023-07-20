@@ -13,19 +13,19 @@ import (
 
 type User struct {
 	Id            primitive.ObjectID         `bson:"_id,omitempty" json:"id"`
-	Email         string                     `bson:"email"`
-	Password      string                     `bson:"password"`
-	Role          string                     `bson:"role"`
-	DisplayName   string                     `bson:"displayName"`
-	Avatar        string                     `bson:"avatar"`
-	FirstName     string                     `bson:"firstName"`
-	LastName      string                     `bson:"lastName"`
-	Gender        int                        `bson:"gender"`
-	FollowMangas  []primitive.ObjectID       `bson:"followMangas"`
-	OwnedChapters []primitive.ObjectID       `bson:"ownedChapters"`
-	Comments      []primitive.ObjectID       `bson:"comments"`
-	Reports       []primitive.ObjectID       `bson:"reports"`
-	Rate          map[primitive.ObjectID]int `bson:"rate"`
+	Email         string                     `bson:"email" json:"email"`
+	Password      string                     `bson:"password" json:"password"`
+	Role          string                     `bson:"role" json:"role"`
+	DisplayName   string                     `bson:"displayName" json:"displayname"`
+	Avatar        string                     `bson:"avatar" json:"avatar"`
+	FirstName     string                     `bson:"firstName" json:"firstname"`
+	LastName      string                     `bson:"lastName" json:"lastname"`
+	Gender        int                        `bson:"gender" json:"gender"`
+	FollowMangas  []primitive.ObjectID       `bson:"followMangas" json:"followMangas"`
+	OwnedChapters []primitive.ObjectID       `bson:"ownedChapters" json:"ownedChapters"`
+	Comments      []primitive.ObjectID       `bson:"comments" json:"comments"`
+	Reports       []primitive.ObjectID       `bson:"reports" json:"reports"`
+	Rate          map[primitive.ObjectID]int `bson:"rate" json:"rate"`
 }
 
 func (user *User) InsertToDatabase() (primitive.ObjectID, error) {
@@ -377,6 +377,21 @@ func (user *User) SetFavoriteManga(mangaId primitive.ObjectID) error {
 		return err
 	}
 	return nil
+}
+
+func (user *User) GetTotalCount() (int, error) {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return 0, err
+	}
+
+	filter := bson.D{{}}
+	count, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
 }
 
 func checkExistedEmail(email string) (bool, error) {

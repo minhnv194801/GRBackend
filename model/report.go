@@ -13,12 +13,12 @@ import (
 
 type Report struct {
 	Id          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Chapter     primitive.ObjectID `bson:"chapter"`
-	User        primitive.ObjectID `bson:"user"`
-	Content     string             `bson:"content"`
-	TimeCreated uint               `bson:"timeCreated"`
-	Status      int                `bson:"status"`
-	Response    string             `bson:"response"`
+	Chapter     primitive.ObjectID `bson:"chapter" json:"chapter"`
+	User        primitive.ObjectID `bson:"user" json:"user"`
+	Content     string             `bson:"content" json:"content"`
+	TimeCreated uint               `bson:"timeCreated" json:"timeCreated"`
+	Status      int                `bson:"status" json:"status"`
+	Response    string             `bson:"response" json:"response"`
 }
 
 func (report *Report) InsertToDatabase() (primitive.ObjectID, error) {
@@ -192,4 +192,19 @@ func (report *Report) DeleteReportById(id primitive.ObjectID) error {
 	}
 
 	return nil
+}
+
+func (report *Report) GetTotalCount() (int, error) {
+	coll, err := database.GetReportCollection()
+	if err != nil {
+		return 0, err
+	}
+
+	filter := bson.D{{}}
+	count, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
 }

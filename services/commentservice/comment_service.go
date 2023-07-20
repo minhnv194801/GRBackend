@@ -40,3 +40,7 @@ func CreateNewComment(userId, mangaId, commentContent string) error {
 
 	return err
 }
+
+func GetTotalCount() (int, error) {
+	return new(model.Comment).GetTotalCount()
+}

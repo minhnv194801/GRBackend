@@ -36,3 +36,13 @@ func CreateNewReport(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Success"})
 }
+
+func GetTotalCount(c *gin.Context) {
+	totalCount, err := reportservice.GetTotalCount()
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Error in system"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, totalCount)
+}

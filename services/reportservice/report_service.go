@@ -33,3 +33,7 @@ func GetUserReport(userId string) ([]model.Report, error) {
 
 	return new(model.Report).GetUserReport(userObjId)
 }
+
+func GetTotalCount() (int, error) {
+	return new(model.Report).GetTotalCount()
+}

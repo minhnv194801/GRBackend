@@ -68,25 +68,30 @@ func InitRouter() *gin.Engine {
 	// apiv1User.Use(middleware.AuthMiddleware())
 	{
 		apiv1Admin.GET("/users", admincontroller.GetUserList)
+		apiv1Admin.GET("/users/count", usercontroller.GetTotalCount)
 		apiv1Admin.GET("/users/:id", admincontroller.GetUser)
 		apiv1Admin.POST("/users", admincontroller.CreateNewUser)
 		apiv1Admin.DELETE("/users/:id", admincontroller.DeleteUser)
 
 		apiv1Admin.GET("/mangas", admincontroller.GetMangaList)
+		apiv1Admin.GET("/mangas/count", mangacontroller.GetMangaTotalCount)
 		apiv1Admin.GET("/mangas/:id", admincontroller.GetManga)
 		apiv1Admin.POST("/mangas", admincontroller.CreateNewManga)
 		apiv1Admin.DELETE("/mangas/:id", admincontroller.DeleteManga)
 
 		apiv1Admin.GET("/chapters", admincontroller.GetChapterList)
+		apiv1Admin.GET("/chapters/count", mangacontroller.GetChapterTotalCount)
 		apiv1Admin.GET("/chapters/:id", admincontroller.GetChapter)
 		apiv1Admin.POST("/chapters", admincontroller.CreateNewChapter)
 		apiv1Admin.DELETE("/chapters/:id", admincontroller.DeleteChapter)
 
 		apiv1Admin.GET("/comments", admincontroller.GetCommentList)
+		apiv1Admin.GET("/comments/count", commentcontroller.GetTotalCount)
 		apiv1Admin.GET("/comments/:id", admincontroller.GetComment)
 		apiv1Admin.DELETE("/comments/:id", admincontroller.DeleteComment)
 
 		apiv1Admin.GET("/reports", admincontroller.GetReportList)
+		apiv1Admin.GET("/reports/count", reportcontroller.GetTotalCount)
 		apiv1Admin.GET("/reports/:id", admincontroller.GetReport)
 		apiv1Admin.DELETE("/reports/:id", admincontroller.DeleteReport)
 	}
