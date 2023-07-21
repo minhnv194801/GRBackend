@@ -174,9 +174,7 @@ func CreateManga(name string, alternateNames []string, author string, cover stri
 	manga := new(model.Manga)
 	manga.Name = name
 	manga.AlternateName = alternateNames
-	authors := make([]string, 1)
-	authors[0] = author
-	manga.Author = authors
+	manga.Author = author
 	manga.Cover = cover
 	manga.Description = description
 	manga.IsRecommended = isRecommend

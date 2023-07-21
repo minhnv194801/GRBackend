@@ -17,7 +17,7 @@ type Manga struct {
 	Id            primitive.ObjectID         `bson:"_id,omitempty" json:"id"`
 	Name          string                     `bson:"name" json:"name"`
 	AlternateName []string                   `bson:"alternateName" json:"alternateNames"`
-	Author        []string                   `bson:"author" json:"author"`
+	Author        string                     `bson:"author" json:"author"`
 	Cover         string                     `bson:"cover" json:"cover"`
 	Description   string                     `bson:"description" json:"description"`
 	Status        Status                     `bson:"status" json:"status"`

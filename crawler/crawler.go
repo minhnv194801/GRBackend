@@ -158,7 +158,7 @@ func getMangaData(ctx context.Context, mangaUrl string) error {
 	manga.Cover = cover
 	manga.AlternateName = alternateNames
 	if author != "" {
-		manga.Author = append(manga.Author, author)
+		manga.Author = author
 	}
 	manga.Status = status
 	manga.Tags = tags

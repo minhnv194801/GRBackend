@@ -35,7 +35,7 @@ func GetMangaInfo(c *gin.Context) {
 	response.Title = manga.Name
 	response.Cover = manga.Cover
 	if len(manga.Author) != 0 {
-		response.Author = manga.Author[0]
+		response.Author = manga.Author
 	} else {
 		response.Author = ""
 	}
