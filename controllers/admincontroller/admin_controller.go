@@ -1,6 +1,9 @@
 package admincontroller
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"magna/model"
 	"magna/requests"
@@ -157,6 +160,15 @@ func UpdateUser(c *gin.Context) {
 	user := new(model.User)
 	user.Id = objId
 
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	mapbody := make(map[string]interface{})
+	json.Unmarshal(body, &mapbody)
+
+	//Dangerous tread we walking here!!!
+	for key, value := range mapbody {
+		user.Update(key, value)
+	}
+
 	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
 }
 
@@ -304,6 +316,28 @@ func DeleteManga(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
 }
 
+func UpdateManga(c *gin.Context) {
+	id := c.Param("id")
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	manga := new(model.Manga)
+	manga.Id = objId
+
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	mapbody := make(map[string]interface{})
+	json.Unmarshal(body, &mapbody)
+
+	//Dangerous tread we walking here!!!
+	for key, value := range mapbody {
+		manga.Update(key, value)
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
+}
+
 func CreateNewManga(c *gin.Context) {
 	req := requests.AdminCreateMangaRequest{}
 	err := c.ShouldBindJSON(&req)
@@ -312,7 +346,7 @@ func CreateNewManga(c *gin.Context) {
 		return
 	}
 	log.Println(req)
-	id, err := mangaservice.CreateManga(req.Name, strings.Split(req.AlternateName, ","), req.Author, req.Cover, req.Description, req.IsRecommend, strings.Split(req.Tags, ","))
+	id, err := mangaservice.CreateManga(req.Name, req.AlternateName, req.Author, req.Cover, req.Description, req.IsRecommend, req.Tags)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
@@ -444,18 +478,46 @@ func DeleteChapter(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
 }
 
+func UpdateChapter(c *gin.Context) {
+	id := c.Param("id")
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	chapter := new(model.Chapter)
+	chapter.Id = objId
+
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	mapbody := make(map[string]interface{})
+	json.Unmarshal(body, &mapbody)
+
+	//Dangerous tread we walking here!!!
+	for key, value := range mapbody {
+		chapter.Update(key, value)
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
+}
+
 func CreateNewChapter(c *gin.Context) {
 	req := requests.AdminCreateChapterRequest{}
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		fmt.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
 		return
 	}
 
-	id, err := chapterservice.CreateChapter(req.MangaId, req.Title, req.Cover, req.Price, strings.Split(req.Images, ","))
+	id, err := chapterservice.CreateChapter(req.MangaId, req.Title, req.Cover, req.Price, req.Images)
 	if err != nil {
-		log.Println(err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
+		fmt.Println(err)
+		if strings.Contains(err.Error(), "manga") {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"errors": gin.H{"Manga": err.Error()}})
+			return
+		}
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
@@ -727,6 +789,32 @@ func DeleteReport(c *gin.Context) {
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"id": id})
+}
+
+func RespondReport(c *gin.Context) {
+	id := c.Param("id")
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+	}
+	report := new(model.Report)
+	report.Id = objId
+
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	mapbody := make(map[string]interface{})
+	json.Unmarshal(body, &mapbody)
+
+	//Dangerous tread we walking here!!!
+	for key, value := range mapbody {
+		fmt.Println(key)
+		fmt.Println(key == "response")
+		if key == "response" {
+			report.Respond(fmt.Sprint(value))
+		}
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"id": id})

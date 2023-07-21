@@ -581,7 +581,7 @@ func (user *User) IsAdmin() (bool, error) {
 	return user.Role == "Quản trị viên", nil
 }
 
-func (user *User) Update(fieldName, fieldValue string) error {
+func (user *User) Update(fieldName string, fieldValue interface{}) error {
 	coll, err := database.GetUserCollection()
 	if err != nil {
 		return err

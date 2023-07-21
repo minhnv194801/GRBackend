@@ -67,6 +67,10 @@ func Register(email, password, rePassword string) (sskey string, refreshkey stri
 }
 
 func CheckAdmin(userId string) (bool, error) {
+	if userId == "" {
+		return false, nil
+	}
+
 	objId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
 		return false, err

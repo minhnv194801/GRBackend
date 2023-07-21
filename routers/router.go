@@ -65,18 +65,20 @@ func InitRouter() *gin.Engine {
 	}
 
 	apiv1Admin := apiv1.Group("/admin")
-	// apiv1User.Use(middleware.AuthMiddleware())
+	apiv1User.Use(middleware.AuthMiddleware())
 	{
 		apiv1Admin.GET("/users", admincontroller.GetUserList)
 		apiv1Admin.GET("/users/count", usercontroller.GetTotalCount)
 		apiv1Admin.GET("/users/:id", admincontroller.GetUser)
 		apiv1Admin.GET("/users/reference/:id", admincontroller.GetUserReference)
 		apiv1Admin.POST("/users", admincontroller.CreateNewUser)
+		apiv1Admin.PUT("/users/:id", admincontroller.UpdateUser)
 		apiv1Admin.DELETE("/users/:id", admincontroller.DeleteUser)
 
 		apiv1Admin.GET("/mangas", admincontroller.GetMangaList)
 		apiv1Admin.GET("/mangas/count", mangacontroller.GetMangaTotalCount)
 		apiv1Admin.GET("/mangas/:id", admincontroller.GetManga)
+		apiv1Admin.PUT("/mangas/:id", admincontroller.UpdateManga)
 		apiv1Admin.GET("/mangas/reference/:id", admincontroller.GetMangaReference)
 		apiv1Admin.POST("/mangas", admincontroller.CreateNewManga)
 		apiv1Admin.DELETE("/mangas/:id", admincontroller.DeleteManga)
@@ -84,6 +86,7 @@ func InitRouter() *gin.Engine {
 		apiv1Admin.GET("/chapters", admincontroller.GetChapterList)
 		apiv1Admin.GET("/chapters/count", mangacontroller.GetChapterTotalCount)
 		apiv1Admin.GET("/chapters/:id", admincontroller.GetChapter)
+		apiv1Admin.PUT("/chapters/:id", admincontroller.UpdateChapter)
 		apiv1Admin.GET("/chapters/reference/:id", admincontroller.GetChapterReference)
 		apiv1Admin.POST("/chapters", admincontroller.CreateNewChapter)
 		apiv1Admin.DELETE("/chapters/:id", admincontroller.DeleteChapter)
@@ -97,8 +100,11 @@ func InitRouter() *gin.Engine {
 		apiv1Admin.GET("/reports", admincontroller.GetReportList)
 		apiv1Admin.GET("/reports/count", reportcontroller.GetTotalCount)
 		apiv1Admin.GET("/reports/:id", admincontroller.GetReport)
+		apiv1Admin.PUT("/reports/:id", admincontroller.RespondReport)
 		apiv1Admin.GET("/reports/reference/:id", admincontroller.GetReportReference)
 		apiv1Admin.DELETE("/reports/:id", admincontroller.DeleteReport)
+
+		apiv1Admin.GET("/auth", authcontroller.CheckAdmin)
 	}
 
 	apiv1.POST("/report/:chapterid", reportcontroller.CreateNewReport)

@@ -628,6 +628,24 @@ func (manga *Manga) DeleteMangaById(id primitive.ObjectID) error {
 	return nil
 }
 
+func (manga *Manga) Update(fieldName string, fieldValue interface{}) error {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", manga.Id}}
+	update := bson.D{{"$set", bson.D{
+		{fieldName, fieldValue},
+		{"updateTime", uint(time.Now().Unix())},
+	}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func getExistedTitleID(name string) (primitive.ObjectID, error) {
 	coll, err := database.GetMangaCollection()
 	if err != nil {

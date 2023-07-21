@@ -1,6 +1,7 @@
 package chapterservice
 
 import (
+	"errors"
 	"magna/model"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -60,7 +61,13 @@ func GroupMangaToChapter(chapterId []primitive.ObjectID) (map[string][]model.Cha
 func CreateChapter(mangaId string, title string, cover string, price uint, images []string) (string, error) {
 	mangaObjId, err := primitive.ObjectIDFromHex(mangaId)
 	if err != nil {
-		return "", err
+		return "", errors.New("manga not exists")
+	}
+
+	manga := new(model.Manga)
+	err = manga.GetItemFromObjectId(mangaObjId)
+	if err != nil {
+		return "", errors.New("manga not exists")
 	}
 
 	chapter := new(model.Chapter)
@@ -74,8 +81,6 @@ func CreateChapter(mangaId string, title string, cover string, price uint, image
 		return "", err
 	}
 
-	manga := new(model.Manga)
-	manga.GetItemFromObjectId(mangaObjId)
 	err = manga.UpdateChapter(chapter)
 	if err != nil {
 		return "", err

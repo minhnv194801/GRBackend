@@ -1,6 +1,8 @@
 package authcontroller
 
 import (
+	"errors"
+	"fmt"
 	"magna/requests"
 	"magna/responses"
 	"magna/services/authservice"
@@ -77,4 +79,21 @@ func RefreshSession(c *gin.Context) {
 		Username:   username,
 		Avatar:     avatar,
 	})
+}
+
+func CheckAdmin(c *gin.Context) {
+	sessionkey := c.GetHeader("Authorization")
+	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
+	if err != nil {
+		fmt.Println(err)
+		userId = ""
+	}
+	isAdmin, err := authservice.CheckAdmin(userId)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Error in system"))
+	}
+	if !isAdmin {
+		c.AbortWithError(http.StatusUnauthorized, errors.New("UnAuthorized"))
+	}
+	c.IndentedJSON(http.StatusOK, nil)
 }

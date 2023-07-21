@@ -286,6 +286,24 @@ func (report *Report) DeleteReportById(id primitive.ObjectID) error {
 	return nil
 }
 
+func (report *Report) Respond(respond string) error {
+	coll, err := database.GetReportCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", report.Id}}
+	update := bson.D{{"$set", bson.D{
+		{"response", respond},
+		{"status", 1},
+	}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (report *Report) GetTotalCount() (int, error) {
 	coll, err := database.GetReportCollection()
 	if err != nil {
