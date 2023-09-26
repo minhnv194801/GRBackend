@@ -13,6 +13,9 @@ COPY . .
 # Disable Go Modules
 ENV GO111MODULE=off
 
+# Download and install any required dependencies
+RUN go mod download
+
 # Build the Go app
 RUN go build -o main .
 
