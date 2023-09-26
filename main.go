@@ -13,5 +13,5 @@ func main() {
 	c := cron.New()
 	c.AddFunc("@daily", mangaservice.ClearHotMangaMap)
 
-	router.Run("localhost:8081")
+	router.Run(":8080")
 }
