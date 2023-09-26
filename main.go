@@ -7,7 +7,6 @@ import (
 	"github.com/robfig/cron"
 )
 
-//TODO: rating system,get favorite list, get report list
 func main() {
 	router := routers.InitRouter()
 

@@ -27,5 +27,6 @@ func FixCorruptedImages(oldImage, newImage string) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
