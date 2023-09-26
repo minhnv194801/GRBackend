@@ -10,9 +10,6 @@ WORKDIR /
 # Copy the source from the current directory to the Working Directory inside the container
 COPY . .
 
-# Disable Go Modules
-ENV GO111MODULE=off
-
 # Download and install any required dependencies
 RUN go mod download
 
