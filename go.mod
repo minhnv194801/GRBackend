@@ -4,11 +4,13 @@ go 1.18
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/cdipaolo/goml v0.0.0-20220715001353-00e0c845ae1c
 	github.com/chromedp/cdproto v0.0.0-20220924210414-0e3390be1777
 	github.com/chromedp/chromedp v0.8.6
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.8.2
 	github.com/robfig/cron v1.2.0
+	github.com/wilcosheh/tfidf v0.0.0-20170517095906-2847b6a5524e
 	go.mongodb.org/mongo-driver v1.11.1
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 )
@@ -40,6 +42,7 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
+	github.com/yanyiwu/gojieba v1.3.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect

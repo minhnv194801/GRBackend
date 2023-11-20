@@ -42,3 +42,13 @@ type ReportResponse struct {
 	Status       int    `json:"status"`
 	Response     string `json:"response"`
 }
+
+type RecommendedItem struct {
+	Id          string   `json:"id"`
+	Title       string   `json:"title"`
+	Cover       string   `json:"cover"`
+	Description string   `json:"description"`
+	Status      int      `json:"status"`
+	Rating      float32  `json:"rating"`
+	Tags        []string `json:"tags"`
+}

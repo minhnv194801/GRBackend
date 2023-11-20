@@ -35,6 +35,7 @@ func InitRouter() *gin.Engine {
 		apiv1Home.GET("/new/:position/:count/", homecontroller.GetNewestList)
 		apiv1Home.GET("/recommend/:count/", homecontroller.GetListRecommendation)
 		apiv1Home.GET("/hot/:count/", homecontroller.GetListHotItems)
+		apiv1Home.GET("/user/recommend/:count/", usercontroller.GetUserRecommendation)
 	}
 
 	apiv1Manga := apiv1.Group("/manga")

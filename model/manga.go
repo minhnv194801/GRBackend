@@ -468,6 +468,28 @@ func (manga *Manga) GetNewestItemList(position, count int) ([]Manga, int, error)
 	}
 }
 
+func (manga *Manga) GetAllItem() ([]Manga, error) {
+	coll, err := database.GetMangaCollection()
+	if err != nil {
+		return nil, err
+	}
+
+	listItem := make([]Manga, 0)
+	filter := bson.D{{}}
+
+	cursor, err := coll.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+	err = cursor.All(context.TODO(), &listItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return listItem, nil
+}
+
 func (manga *Manga) GetTotalCount() (int, error) {
 	coll, err := database.GetMangaCollection()
 	if err != nil {

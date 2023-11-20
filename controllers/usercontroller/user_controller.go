@@ -11,6 +11,7 @@ import (
 	"magna/services/sessionservice"
 	"magna/services/userservice"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -183,6 +184,48 @@ func GetUserReport(c *gin.Context) {
 		response.Response = report.Response
 		response.Status = report.Status
 		response.TimeCreated = int(report.TimeCreated)
+		responseList = append(responseList, response)
+	}
+
+	c.IndentedJSON(http.StatusOK, responseList)
+}
+
+func GetUserRecommendation(c *gin.Context) {
+	countParam := c.Param("count")
+	count, err := strconv.Atoi(countParam)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Bad params"})
+		return
+	}
+
+	sessionkey := c.GetHeader("Authorization")
+	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
+	if err != nil {
+		userId = ""
+	}
+
+	mangaList, err := userservice.GetUserRecommendations(userId, count)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Server error"})
+		return
+	}
+
+	var responseList []responses.RecommendedItem
+	for _, manga := range mangaList {
+		var response responses.RecommendedItem
+		response.Id = manga.Id.Hex()
+		response.Title = manga.Name
+		response.Cover = manga.Cover
+		response.Description = manga.Description
+		response.Status = int(manga.Status)
+		response.Tags = manga.Tags
+		var sum float32
+		for _, value := range manga.Rated {
+			sum += float32(value)
+		}
+		if len(manga.Rated) != 0 {
+			response.Rating = sum / float32(len(manga.Rated))
+		}
 		responseList = append(responseList, response)
 	}
 
