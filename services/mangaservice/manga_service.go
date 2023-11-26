@@ -2,7 +2,6 @@ package mangaservice
 
 import (
 	"errors"
-	"fmt"
 	"magna/model"
 	"magna/services/userservice"
 	"sort"
@@ -43,8 +42,6 @@ func GetMangaInfo(mangaId string) (*model.Manga, error) {
 }
 
 func GetListHotItems(count int) ([]model.Manga, error) {
-	fmt.Println("Start to serve list hot items")
-	fmt.Println(hotMangaMap)
 	result := make([]model.Manga, 0)
 
 	objIDs := make([]primitive.ObjectID, 0, len(hotMangaMap))
@@ -137,7 +134,6 @@ func SetUserFavorite(userId, mangaId string) error {
 
 func CheckIsFavorite(mangaId, userId string) (bool, error) {
 	if userId == "" {
-		fmt.Println("WTF")
 		return false, nil
 	}
 	mangaObjId, err := primitive.ObjectIDFromHex(mangaId)
@@ -150,7 +146,6 @@ func CheckIsFavorite(mangaId, userId string) (bool, error) {
 	}
 	var manga model.Manga
 	manga.Id = mangaObjId
-	fmt.Println("Hello")
 	return manga.IsFavorited(userObjId)
 }
 
