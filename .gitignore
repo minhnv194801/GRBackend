@@ -15,3 +15,5 @@
 # vendor/
 
 Manga/*
+
+.env

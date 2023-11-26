@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"os"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,16 +12,17 @@ import (
 var mongoDB *mongo.Database
 var runOnce sync.Once
 
-const uri = "mongodb+srv://user:aabbccdd1234@cluster0.0esyhx6.mongodb.net/?retryWrites=true&w=majority"
-
 func GetMongoDB() (*mongo.Database, error) {
 	runOnce.Do(func() {
+		uri := os.Getenv("DATABASE_URI")
+		databaseName := os.Getenv("DATABASE_NAME")
+
 		mongoClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 		if err != nil {
 			return
 		}
 
-		mongoDB = mongoClient.Database("Magna-test")
+		mongoDB = mongoClient.Database(databaseName)
 	})
 
 	return mongoDB, nil

@@ -3,19 +3,19 @@ package sessionservice
 import (
 	"fmt"
 	"magna/model"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var jwtSecretKey = []byte("kcxhrtodjhbf;bc;jtfpfd")
-var refreshSecretKey = []byte("vgfkvcjbprsrpsgdfbnjo")
+var jwtSecretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
+var refreshSecretKey = []byte(os.Getenv("REFRESH_SECRET_KEY"))
 
 func CreateSession(id string) (sessionkey string, refreshkey string, err error) {
 	claims := jwt.MapClaims{}
 	claims["id"] = id
-	//TODO: put expired time in config
 	claims["exp"] = time.Now().Add(time.Minute * 15).Unix() //Token hết hạn sau 15 phut
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	sessionkey, err = token.SignedString(jwtSecretKey)
