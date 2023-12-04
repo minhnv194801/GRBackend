@@ -541,6 +541,21 @@ func (chapter *Chapter) GetTotalCount() (int, error) {
 	return int(count), nil
 }
 
+func (chapter *Chapter) SetOwned() error {
+	coll, err := database.GetChapterCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", chapter.Id}}
+	update := bson.D{{"$set", bson.D{{"ownedUsers", chapter.OwnedUsers}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (chapter *Chapter) Update(fieldName string, fieldValue interface{}) error {
 	coll, err := database.GetChapterCollection()
 	if err != nil {

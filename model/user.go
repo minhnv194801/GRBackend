@@ -511,6 +511,21 @@ func (user *User) SetRate() error {
 	return nil
 }
 
+func (user *User) SetOwned() error {
+	coll, err := database.GetUserCollection()
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", user.Id}}
+	update := bson.D{{"$set", bson.D{{"ownedChapters", user.OwnedChapters}}}}
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (user *User) RemoveRateManga(mangaId primitive.ObjectID) error {
 	coll, err := database.GetUserCollection()
 	if err != nil {
