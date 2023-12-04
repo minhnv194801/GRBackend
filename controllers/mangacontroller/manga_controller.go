@@ -47,7 +47,6 @@ func GetMangaInfo(c *gin.Context) {
 	if manga.Rated == nil {
 		manga.Rated = make(map[primitive.ObjectID]int)
 	}
-	// fmt.Println(manga.Rated[objId])
 	if err == nil {
 		response.UserRating = uint(manga.Rated[objId])
 	} else {

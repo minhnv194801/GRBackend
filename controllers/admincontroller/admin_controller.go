@@ -810,8 +810,6 @@ func RespondReport(c *gin.Context) {
 
 	//Dangerous tread we walking here!!!
 	for key, value := range mapbody {
-		fmt.Println(key)
-		fmt.Println(key == "response")
 		if key == "response" {
 			report.Respond(fmt.Sprint(value))
 		}
