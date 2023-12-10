@@ -15,7 +15,7 @@ type MomoIPNRequest struct {
 	Amount       int    `json:"amount"`
 	OrderInfo    string `json:"orderInfo"`
 	OrderType    string `json:"orderType"`
-	TransId      string `json:"transId"`
+	TransId      int    `json:"transId"`
 	ResultCode   int    `json:"resultCode"`
 	Message      string `json:"message"`
 	PayType      string `json:"payType"`

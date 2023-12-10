@@ -77,7 +77,7 @@ func SetOwned(c *gin.Context) {
 	rawSignature.WriteString("&orderType=")
 	rawSignature.WriteString(req.OrderType)
 	rawSignature.WriteString("&transId=")
-	rawSignature.WriteString(req.TransId)
+	rawSignature.WriteString(strconv.Itoa(req.TransId))
 	rawSignature.WriteString("&resultCode=")
 	rawSignature.WriteString(strconv.Itoa(req.ResultCode))
 	rawSignature.WriteString("&message=")
