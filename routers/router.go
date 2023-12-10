@@ -7,6 +7,7 @@ import (
 	"magna/controllers/favoritecontroller"
 	"magna/controllers/homecontroller"
 	"magna/controllers/mangacontroller"
+	"magna/controllers/paymentcontroller"
 	"magna/controllers/readcontroller"
 	"magna/controllers/reportcontroller"
 	"magna/controllers/searchcontroller"
@@ -63,6 +64,13 @@ func InitRouter() *gin.Engine {
 		apiv1User.GET("/owned", usercontroller.GetOwnedChapter)
 		apiv1User.GET("/report", usercontroller.GetUserReport)
 		apiv1User.GET("/favorite", usercontroller.GetFavoriteMangaList)
+	}
+
+	apiv1Pay := apiv1.Group("/pay")
+	apiv1MomoPay := apiv1Pay.Group("/momo")
+	{
+		apiv1MomoPay.POST("/payurl", paymentcontroller.GetMomoPayURL)
+		apiv1MomoPay.POST("/ipn", paymentcontroller.SetOwned)
 	}
 
 	apiv1Admin := apiv1.Group("/admin")
