@@ -56,6 +56,7 @@ func SetOwned(c *gin.Context) {
 	req := requests.MomoIPNRequest{}
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
+		log.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
 		return
 	}
