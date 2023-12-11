@@ -40,7 +40,12 @@ func GetMomoPayURL(c *gin.Context) {
 		return
 	}
 
-	orderId, payUrl, err := paymentservice.GetMomoPayURL(req.OrderInfo, req.RedirectUrl, "ipnUrl", strconv.Itoa(req.Amount), req.ExtraData)
+	scheme := "http:"
+	if c.Request.TLS != nil {
+		scheme = "https:"
+	}
+	momoIpnUrl := scheme + "//" + c.Request.Host + "/api/v1/pay/momo/ipn"
+	orderId, payUrl, err := paymentservice.GetMomoPayURL(req.OrderInfo, req.RedirectUrl, momoIpnUrl, strconv.Itoa(req.Amount), req.ExtraData)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
 		return
@@ -99,8 +104,8 @@ func SetOwned(c *gin.Context) {
 	check := hmac.Equal(calculated, []byte(req.Signature))
 	if !check {
 		log.Println("ERROR: Fail signature check")
-		// c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Fail signature check"})
-		// return
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Fail signature check"})
+		return
 	}
 
 	if req.ResultCode != 0 {
@@ -110,7 +115,7 @@ func SetOwned(c *gin.Context) {
 	}
 
 	paymentservice.SetOwned(orderMap[req.OrderId].userId, orderMap[req.OrderId].chapterId)
+	delete(orderMap, req.OrderId)
 
-	// c.IndentedJSON(http.StatusOK)
 	c.JSON(http.StatusNoContent, gin.H{})
 }
