@@ -19,7 +19,6 @@ import (
 
 func GetMangaInfo(c *gin.Context) {
 	id := c.Param("mangaid")
-	log.Println("MangaId:", id)
 	sessionkey := c.GetHeader("Authorization")
 	userId, _ := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 

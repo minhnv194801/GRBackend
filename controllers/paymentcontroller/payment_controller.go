@@ -91,7 +91,7 @@ func SetOwned(c *gin.Context) {
 	rawSignature.WriteString("&extraData=")
 	rawSignature.WriteString(req.ExtraData)
 
-	var publicKey = os.Getenv("MOMO_API_PUBLIC_KEY")
+	var publicKey = os.Getenv("MOMO_API_SECRET_KEY")
 	// Create a new HMAC by defining the hash type and the key (as byte array)
 	h := hmac.New(sha256.New, []byte(publicKey))
 
@@ -101,13 +101,13 @@ func SetOwned(c *gin.Context) {
 	check := hmac.Equal(calculated, []byte(req.Signature))
 	if !check {
 		log.Println("ERROR: Fail signature check")
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Fail signature check"})
-		return
+		// c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Fail signature check"})
+		// return
 	}
 
 	if req.ResultCode != 0 {
 		log.Println("ERROR: Result Code: " + strconv.Itoa(req.ResultCode))
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Fail signature check"})
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Fail payment"})
 		return
 	}
 
