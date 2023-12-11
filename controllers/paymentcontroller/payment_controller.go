@@ -25,7 +25,9 @@ var (
 	orderMap map[string]order = make(map[string]order)
 )
 
-func GetMomoPayURL(c *gin.Context) {
+func GetMomoPayURLForChapter(c *gin.Context) {
+	chapterId := c.Param("chapterid")
+
 	sessionkey := c.GetHeader("Authorization")
 	userId, err := sessionservice.ExtractUserIdFromSessionKey(sessionkey)
 	if err != nil {
@@ -42,18 +44,17 @@ func GetMomoPayURL(c *gin.Context) {
 
 	scheme := "https:"
 	momoIpnUrl := scheme + "//" + c.Request.Host + "/api/v1/pay/momo/ipn"
-	orderId, payUrl, err := paymentservice.GetMomoPayURL(req.OrderInfo, req.RedirectUrl, momoIpnUrl, strconv.Itoa(req.Amount), req.ExtraData)
+	orderId, payUrl, err := paymentservice.GetMomoPayURLForChapter(chapterId, req.RedirectUrl, momoIpnUrl)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
 		return
 	}
-	orderMap[orderId] = order{req.ChapterId, userId}
+	orderMap[orderId] = order{chapterId, userId}
 	time.AfterFunc(2*time.Hour, func() { delete(orderMap, orderId) })
 
 	c.IndentedJSON(http.StatusOK, gin.H{"payUrl": payUrl})
 }
 
-// TODO: check hash
 func SetOwned(c *gin.Context) {
 	req := requests.MomoIPNRequest{}
 	err := c.ShouldBindJSON(&req)

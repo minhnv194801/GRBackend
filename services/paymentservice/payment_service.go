@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"magna/model"
 	"magna/services/chapterservice"
 	"magna/services/userservice"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"strconv"
 
 	"github.com/sony/sonyflake"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 //define a payload, reference in https://developers.momo.vn/#cong-thanh-toan-momo-phuong-thuc-thanh-toan
@@ -37,7 +39,26 @@ type Payload struct {
 	Signature    string `json:"signature"`
 }
 
-func GetMomoPayURL(orderInfo, redirectUrl, ipnUrl, amount, extraData string) (orderId, payUrl string, err error) {
+func GetMomoPayURLForChapter(chapterId, redirectUrl, ipnUrl string) (orderId, payUrl string, err error) {
+	chapter := new(model.Chapter)
+	chapterObjId, err := primitive.ObjectIDFromHex(chapterId)
+	if err != nil {
+		log.Println(err)
+		return "", "", err
+	}
+	err = chapter.GetItemFromObjectId(chapterObjId)
+	if err != nil {
+		log.Println(err)
+		return "", "", err
+	}
+	manga := new(model.Manga)
+	err = manga.GetItemFromObjectId(chapter.Manga)
+	if err != nil {
+		log.Println(err)
+		return "", "", err
+	}
+	orderInfo := "Mua chương truyện " + chapter.Name + " của bộ truyện " + manga.Name
+
 	flake := sonyflake.NewSonyflake(sonyflake.Settings{})
 	//randome orderID and requestID
 	a, _ := flake.NextID()
@@ -61,9 +82,9 @@ func GetMomoPayURL(orderInfo, redirectUrl, ipnUrl, amount, extraData string) (or
 	rawSignature.WriteString("accessKey=")
 	rawSignature.WriteString(accessKey)
 	rawSignature.WriteString("&amount=")
-	rawSignature.WriteString(amount)
+	rawSignature.WriteString(strconv.Itoa(int(chapter.Price)))
 	rawSignature.WriteString("&extraData=")
-	rawSignature.WriteString(extraData)
+	rawSignature.WriteString("")
 	rawSignature.WriteString("&ipnUrl=")
 	rawSignature.WriteString(ipnUrl)
 	rawSignature.WriteString("&orderId=")
@@ -93,7 +114,7 @@ func GetMomoPayURL(orderInfo, redirectUrl, ipnUrl, amount, extraData string) (or
 		PartnerCode:  partnerCode,
 		AccessKey:    accessKey,
 		RequestID:    requestId,
-		Amount:       amount,
+		Amount:       strconv.Itoa(int(chapter.Price)),
 		RequestType:  requestType,
 		RedirectUrl:  redirectUrl,
 		IpnUrl:       ipnUrl,
@@ -104,7 +125,7 @@ func GetMomoPayURL(orderInfo, redirectUrl, ipnUrl, amount, extraData string) (or
 		AutoCapture:  autoCapture,
 		Lang:         lang,
 		OrderInfo:    orderInfo,
-		ExtraData:    extraData,
+		ExtraData:    "",
 		Signature:    signature,
 	}
 

@@ -69,7 +69,7 @@ func InitRouter() *gin.Engine {
 	apiv1Pay := apiv1.Group("/pay")
 	apiv1MomoPay := apiv1Pay.Group("/momo")
 	{
-		apiv1MomoPay.POST("/payurl", paymentcontroller.GetMomoPayURL)
+		apiv1MomoPay.POST("/payurl/:chapterid", paymentcontroller.GetMomoPayURLForChapter)
 		apiv1MomoPay.POST("/ipn", paymentcontroller.SetOwned)
 	}
 
