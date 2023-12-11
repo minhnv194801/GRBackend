@@ -40,10 +40,7 @@ func GetMomoPayURL(c *gin.Context) {
 		return
 	}
 
-	scheme := "http:"
-	if c.Request.TLS != nil {
-		scheme = "https:"
-	}
+	scheme := "https:"
 	momoIpnUrl := scheme + "//" + c.Request.Host + "/api/v1/pay/momo/ipn"
 	orderId, payUrl, err := paymentservice.GetMomoPayURL(req.OrderInfo, req.RedirectUrl, momoIpnUrl, strconv.Itoa(req.Amount), req.ExtraData)
 	if err != nil {
