@@ -9,5 +9,6 @@ type ReadResponse struct {
 	MangaId    string   `json:"mangaId"`
 	MangaTitle string   `json:"mangaTitle"`
 	Title      string   `json:"title"`
+	Price      uint     `json:"price"`
 	Pages      []string `json:"pages"`
 }

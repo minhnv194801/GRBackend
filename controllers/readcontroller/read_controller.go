@@ -24,6 +24,7 @@ func GetChapterInfo(c *gin.Context) {
 	response.Title = chapter.Name
 	response.MangaId = chapter.Manga.Hex()
 	response.Pages = chapter.Images
+	response.Price = chapter.Price
 
 	manga, err := mangaservice.GetItemFromId(chapter.Manga.Hex())
 	if err != nil {
