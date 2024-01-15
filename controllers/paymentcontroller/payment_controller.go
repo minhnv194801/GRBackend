@@ -22,7 +22,10 @@ type order struct {
 }
 
 var (
-	orderMap map[string]order = make(map[string]order)
+	orderMap          map[string]order = make(map[string]order)
+	urlMap            map[order]string = make(map[order]string)
+	momoExpiredHour                    = 2
+	momoExpiredMinute                  = 0
 )
 
 func GetMomoPayURLForChapter(c *gin.Context) {
@@ -42,6 +45,11 @@ func GetMomoPayURLForChapter(c *gin.Context) {
 		return
 	}
 
+	if urlMap[order{chapterId, userId}] != "" {
+		c.IndentedJSON(http.StatusOK, gin.H{"payUrl": urlMap[order{chapterId, userId}]})
+		return
+	}
+
 	scheme := "https:"
 	momoIpnUrl := scheme + "//" + c.Request.Host + "/api/v1/pay/momo/ipn"
 	orderId, payUrl, err := paymentservice.GetMomoPayURLForChapter(chapterId, req.RedirectUrl, momoIpnUrl)
@@ -49,8 +57,11 @@ func GetMomoPayURLForChapter(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Internal system error"})
 		return
 	}
-	orderMap[orderId] = order{chapterId, userId}
-	time.AfterFunc(2*time.Hour, func() { delete(orderMap, orderId) })
+	newOrder := order{chapterId, userId}
+	orderMap[orderId] = newOrder
+	urlMap[newOrder] = payUrl
+	time.AfterFunc(time.Duration(momoExpiredHour)*time.Hour+time.Duration(momoExpiredMinute)*time.Minute, func() { delete(orderMap, orderId) })
+	time.AfterFunc(time.Duration(momoExpiredHour)*time.Hour+time.Duration(momoExpiredMinute)*time.Minute, func() { delete(urlMap, newOrder) })
 
 	c.IndentedJSON(http.StatusOK, gin.H{"payUrl": payUrl})
 }
